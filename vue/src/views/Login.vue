@@ -87,40 +87,44 @@ const handleUserInputUpdate = (newInput) => {
 }
 
 const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    ElMessage.error('用户名和密码不能为空')
-    return
-  }
-
-  // 验证验证码
-  if (captchaInput.value.toLowerCase() !== captchaText.value.toLowerCase()) {
-    ElMessage.error('验证码错误，请重试')
-    return
-  }
-
-  loading.value = true
-  try {
-    const res = await login({
-      username: username.value,
-      password: password.value,
-      role: role.value
-    })
-
-    // 检查响应数据的结构
-    if (res && res.data && res.data.token) {
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
-      ElMessage.success('登录成功')
-      router.push('/manager/home')
-    } else {
-      ElMessage.error(res.message || '登录失败')
+    if (!username.value || !password.value) {
+        ElMessage.error('用户名和密码不能为空')
+        captchaRef.value?.generateCaptcha() // 刷新验证码
+        return
     }
-  } catch (error) {
-    console.error('登录失败:', error)
-    ElMessage.error('登录失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
+
+    // 验证验证码
+    if (captchaInput.value.toLowerCase() !== captchaText.value.toLowerCase()) {
+        ElMessage.error('验证码错误，请重试')
+        captchaRef.value?.generateCaptcha() // 刷新验证码
+        return
+    }
+
+    loading.value = true
+    try {
+        const res = await login({
+            username: username.value,
+            password: password.value,
+            role: role.value
+        })
+
+         // 修改判断条件以匹配新的响应格式
+        if (res && res.code === "200") {
+            // 存储用户信息
+            localStorage.setItem('userInfo', JSON.stringify(res.data))
+            ElMessage.success(res.msg)
+            router.push('/manager/home')
+        } else {
+            ElMessage.error(res.msg || '登录失败')
+            captchaRef.value?.generateCaptcha() // 刷新验证码
+        }
+    } catch (error) {
+        console.error('登录失败:', error)
+        ElMessage.error('登录失败，请稍后重试')
+        captchaRef.value?.generateCaptcha() // 刷新验证码
+    } finally {
+        loading.value = false
+    }
 }
 </script>
 

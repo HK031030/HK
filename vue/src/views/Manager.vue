@@ -83,7 +83,7 @@ const handleCommand = (command) => {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       // 跳转到登录页
-      router.push('/login')
+      router.replace('/login')
       ElMessage.success('退出成功')
     }).catch(() => {})
   }

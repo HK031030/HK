@@ -38,6 +38,28 @@
             </template>
           </el-input>
         </div>
+        <div class="form-item">
+          <el-input
+            v-model="form.phone"
+            type="text"
+            placeholder="手机号码"
+          >
+            <template #prefix>
+              <el-icon><Phone /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <div class="form-item">
+          <el-input
+            v-model="form.email"
+            type="email"
+            placeholder="邮箱"
+          >
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
+        </div>
         <el-button type="primary" style="width:100%;" @click="handleRegister" :loading="loading">
           注册
         </el-button>
@@ -57,7 +79,8 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, Phone, Message } from '@element-plus/icons-vue'
+import { register } from '@/api/user'
 
 const router = useRouter()
 const loading = ref(false)
@@ -66,7 +89,9 @@ const formRef = ref()
 const form = reactive({
   username: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  phone: '',
+  email: ''
 })
 
 const rules = {
@@ -90,6 +115,14 @@ const rules = {
       },
       trigger: 'blur'
     }
+  ],
+  phone: [
+    { required: true, message: '请输入手机号码', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ]
 }
 
@@ -100,17 +133,26 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        // TODO: 调用注册 API
-        // const res = await register({ 
-        //   username: form.username, 
-        //   password: form.password 
-        // })
+        // 构造要发送的数据对象
+        const registerData = {
+          username: form.username,
+          password: form.password,
+          phone: form.phone,
+          email: form.email,
+          role: 'USER'
+        }
         
-        // 模拟注册成功
-        setTimeout(() => {
-          ElMessage.success('注册成功，请登录')
+        // 在发送请求前打印数据
+        console.log('注册请求数据:', registerData)
+        
+        const res = await register(registerData)
+
+        if (res.code === "200") {
+          ElMessage.success(res.msg || '注册成功，请登录')
           router.push('/login')
-        }, 1000)
+        } else {
+          ElMessage.error(res.msg || '注册失败')
+        }
       } catch (error) {
         console.error('注册失败:', error)
         ElMessage.error('注册失败，请稍后重试')
