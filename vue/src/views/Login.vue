@@ -34,7 +34,10 @@
         </div>
 
         <!-- 验证码组件 -->
-        <captcha-component ref="captcha"/>
+        <captcha-component
+          @update:captcha="handleCaptchaUpdate"
+          @update:userInput="handleUserInputUpdate"
+        />
 
         <el-button type="primary" style="width:100%;" @click="handleLogin" :loading="loading">
           登录
@@ -69,6 +72,20 @@ const loading = ref(false)
 // 访问验证码组件的方法
 const captchaRef = ref(null)
 
+const captchaText = ref('') // 存储验证码
+const captchaInput = ref('') // 存储用户输入
+
+// 处理验证码更新
+const handleCaptchaUpdate = (newCaptcha) => {
+  captchaText.value = newCaptcha
+  console.log('新的验证码：', newCaptcha)
+}
+
+// 处理用户输入更新
+const handleUserInputUpdate = (newInput) => {
+  captchaInput.value = newInput
+}
+
 const handleLogin = async () => {
   if (!username.value || !password.value) {
     ElMessage.error('用户名和密码不能为空')
@@ -76,8 +93,8 @@ const handleLogin = async () => {
   }
 
   // 验证验证码
-  if (captchaRef.value.userInput !== captchaRef.value.captcha) {
-    ElMessage.error('验证码错误，请重试。')
+  if (captchaInput.value.toLowerCase() !== captchaText.value.toLowerCase()) {
+    ElMessage.error('验证码错误，请重试')
     return
   }
 
@@ -86,16 +103,17 @@ const handleLogin = async () => {
     const res = await login({
       username: username.value,
       password: password.value,
-      role: role.value // 添加角色到登录请求中
+      role: role.value
     })
 
-    if (res.status === 200) {
+    // 检查响应数据的结构
+    if (res && res.data && res.data.token) {
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
       ElMessage.success('登录成功')
       router.push('/manager/home')
     } else {
-      ElMessage.error(res.message)
+      ElMessage.error(res.message || '登录失败')
     }
   } catch (error) {
     console.error('登录失败:', error)
