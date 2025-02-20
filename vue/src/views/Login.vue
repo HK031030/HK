@@ -87,44 +87,60 @@ const handleUserInputUpdate = (newInput) => {
 }
 
 const handleLogin = async () => {
-    if (!username.value || !password.value) {
-        ElMessage.error('用户名和密码不能为空')
-        captchaRef.value?.generateCaptcha() // 刷新验证码
-        return
-    }
+  if (!username.value || !password.value) {
+    ElMessage.error('用户名和密码不能为空')
+    captchaRef.value?.generateCaptcha()
+    return
+  }
 
-    // 验证验证码
-    if (captchaInput.value.toLowerCase() !== captchaText.value.toLowerCase()) {
-        ElMessage.error('验证码错误，请重试')
-        captchaRef.value?.generateCaptcha() // 刷新验证码
-        return
-    }
+  if (captchaInput.value.toLowerCase() !== captchaText.value.toLowerCase()) {
+    ElMessage.error('验证码错误，请重试')
+    captchaRef.value?.generateCaptcha()
+    return
+  }
 
-    loading.value = true
-    try {
-        const res = await login({
-            username: username.value,
-            password: password.value,
-            role: role.value
+  loading.value = true
+  try {
+    const res = await login({
+      username: username.value,
+      password: password.value,
+      role: role.value
+    })
+
+    console.log('登录响应:', res)
+
+    if (res.code === '200') {
+      // 存储用户信息
+      localStorage.setItem('userInfo', JSON.stringify(res.data))
+      // 如果后端没有返回token，使用用户名作为临时token
+      const token = res.data.token || res.data.username
+      localStorage.setItem('token', token)
+
+      console.log('存储的用户信息:', localStorage.getItem('userInfo'))
+      console.log('存储的token:', localStorage.getItem('token'))
+
+      ElMessage.success(res.msg || '登录成功')
+      
+      // 使用 await 和 try-catch 包裹路由跳转
+      try {
+        await router.push({
+          path: '/manager/home',
+          replace: true
         })
-
-         // 修改判断条件以匹配新的响应格式
-        if (res && res.code === "200") {
-            // 存储用户信息
-            localStorage.setItem('userInfo', JSON.stringify(res.data))
-            ElMessage.success(res.msg)
-            router.push('/manager/home')
-        } else {
-            ElMessage.error(res.msg || '登录失败')
-            captchaRef.value?.generateCaptcha() // 刷新验证码
-        }
-    } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error('登录失败，请稍后重试')
-        captchaRef.value?.generateCaptcha() // 刷新验证码
-    } finally {
-        loading.value = false
+      } catch (routerError) {
+        console.error('路由跳转失败:', routerError)
+      }
+    } else {
+      ElMessage.error(res.msg || '登录失败')
+      captchaRef.value?.generateCaptcha()
     }
+  } catch (error) {
+    console.error('登录失败:', error)
+    ElMessage.error('登录失败，请稍后重试')
+    captchaRef.value?.generateCaptcha()
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
