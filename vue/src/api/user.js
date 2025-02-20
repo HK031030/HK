@@ -16,3 +16,16 @@ export function register(data) {
         data
     })
 }
+
+// 验证身份并重置密码API
+export function verifyAndResetPassword(data) {
+  return request({
+    url: '/forgotPassword',  // 根据后端API路径调整
+    method: 'post',
+    data: {
+      phone: data.phone,
+      email: data.email,
+      role: data.role
+    }
+  })
+}

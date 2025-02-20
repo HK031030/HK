@@ -34,46 +34,37 @@
         </div>
 
         <!-- 验证码组件 -->
-        <captcha-component ref="captcha"/>
+        <div class="form-item">
+          <captcha-component ref="captchaRef"/>
+        </div>
 
         <el-button type="primary" style="width:100%;" @click="handleLogin" :loading="loading">
           登录
         </el-button>
         <!-- 添加注册链接 -->
         <div class="register-link" style="display: flex">
-          <div style="flex: 1">还没有账号？请 <span style="color: #0f9876; cursor: pointer" @click="$router.push('/register')">注册</span></div>
-          <div style="flex: 1; text-align: right"><span style="color: #0f9876; cursor: pointer" @click="handleForgetPass">忘记密码</span></div>
+          <div style="flex: 1">还没有账号？请 
+            <span style="color: #0f9876; cursor: pointer" @click="$router.push('/register')">注册</span>
+          </div>
+          <div style="flex: 1; text-align: right">
+            <span 
+              style="color: #0f9876; cursor: pointer" 
+              @click="handleForgetPass"
+            >忘记密码</span>
+          </div>
         </div>
       </form>
     </div>
     <div class="el-login-footer">
       <span>Copyright © 2025 驾校管理系统</span>
     </div>
-
-    <el-dialog title="忘记密码" v-model:visible="forgetPassDialogVis">
-      <el-form :model="forgetUserForm" label-width="80px" style="padding-right: 20px">
-        <el-form-item label="用户名">
-          <el-input v-model="forgetUserForm.username" autocomplete="off" placeholder="请输入用户名"></el-input>
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="forgetUserForm.phone" autocomplete="off" placeholder="请输入手机号"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="forgetPassDialogVis = false">取 消</el-button>
-          <el-button type="primary" @click="resetPassword">确 定</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
   </div>
 </template>
 
 <script setup>
 import { ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/user'
 import CaptchaComponent from './Captcha.vue' // 引入验证码组件
@@ -92,18 +83,26 @@ const captchaRef = ref(null)
 const handleLogin = async () => {
   if (!username.value || !password.value) {
     ElMessage.error('用户名和密码不能为空')
-    captchaRef.value?.generateCaptcha()
     return
   }
 
-
-
   // 验证验证码
-  const captcha = captchaRef.value.captcha; // 获取验证码
-  const userInput = captchaRef.value.userInput; // 获取用户输入的验证码
+  if (!captchaRef.value) {
+    ElMessage.error('验证码组件加载失败')
+    return
+  }
 
-  if (userInput !== captcha) {
-    ElMessage.error('验证码错误，请重试。')
+  const captchaText = captchaRef.value.captcha.value // 注意这里要访问 .value
+  const userInput = captchaRef.value.userInput.value // 注意这里要访问 .value
+
+  if (!userInput) {
+    ElMessage.error('请输入验证码')
+    return
+  }
+
+  if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
+    ElMessage.error('验证码错误，请重试')
+    captchaRef.value.generateCaptcha()
     return
   }
 
@@ -152,27 +151,8 @@ const handleLogin = async () => {
 }
 
 const handleForgetPass = () => {
-  // 初始化忘记密码表单的数据
-  forgetUserForm.value = {}
-  forgetPassDialogVis.value = true
+  router.push('/forgot-password')
 }
-
-const resetPassword = async () => {
-  try {
-    const res = await this.$request.put('/password', forgetUserForm.value)
-    if (res.code === '200') {
-      ElMessage.success('重置成功')
-      forgetPassDialogVis.value = false
-    } else {
-      ElMessage.error(res.msg)
-    }
-  } catch (error) {
-    console.error('重置密码失败:', error)
-    ElMessage.error('重置密码失败，请稍后重试')
-  }
-}
-
-
 
 </script>
 
@@ -239,6 +219,16 @@ const resetPassword = async () => {
 
     &:hover {
       color: #79bbff;
+    }
+  }
+}
+.register-link {
+  margin-top: 20px;
+  
+  span {
+    &:hover {
+      color: #0f9876;
+      text-decoration: underline;
     }
   }
 }

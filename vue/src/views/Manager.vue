@@ -19,8 +19,8 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile" @click.native="$router.push('/person')">个人资料</el-dropdown-item>
-              <el-dropdown-item command="password" @click.native="$router.push('/password')">修改密码</el-dropdown-item>
+              <el-dropdown-item command="profile" @click="$router.push('/person')">个人资料</el-dropdown-item>
+              <el-dropdown-item command="password" @click="$router.push('/password')">修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>

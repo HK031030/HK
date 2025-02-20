@@ -65,17 +65,22 @@
     </el-input>
   </el-form-item>
 </div>
-        <div class="form-item">
-          <el-input
-            v-model="form.email"
-            type="email"
-            placeholder="邮箱"
-          >
-            <template #prefix>
-              <el-icon><Message /></el-icon>
-            </template>
-          </el-input>
-        </div>
+        <!-- 修改邮箱表单项 -->
+<div class="form-item">
+  <el-form-item label="邮箱" prop="email">
+    <span class="required-star">*</span>
+    <div class="input-tip">请输入有效的邮箱地址</div>
+    <el-input
+      v-model="form.email"
+      type="email"
+      placeholder="请输入邮箱"
+    >
+      <template #prefix>
+        <el-icon><Message /></el-icon>
+      </template>
+    </el-input>
+  </el-form-item>
+</div>
         <el-button type="primary" style="width:100%;" @click="handleRegister" :loading="loading">
           注册
         </el-button>

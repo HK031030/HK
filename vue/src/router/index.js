@@ -10,7 +10,17 @@ const router = createRouter({
       path: '/manager',
       component: () => import('@/views/Manager.vue'),
       children: [
-        { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue'),  }
+        { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue') },
+        { 
+          path: 'person', 
+          meta: { name: '个人信息' }, 
+          component: () => import('@/views/manager/Person.vue') 
+        },
+        { 
+          path: 'password', 
+          meta: { name: '修改密码' }, 
+          component: () => import('@/views/manager/Password.vue') 
+        }
       ]
     },
     {
@@ -21,6 +31,7 @@ const router = createRouter({
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },
+    { path: '/forgot-password', component: () => import('@/views/ForgotPassword.vue') },
     { path: '/:pathMatch(.*)', redirect: '/404' }
   ]
 })
@@ -28,8 +39,9 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  // 修改判断条件，允许访问登录和注册页面
-  if (to.path === '/login' || to.path === '/register') {
+  const publicPages = ['/login', '/register', '/forgot-password']
+  
+  if (publicPages.includes(to.path)) {
     next()
   } else {
     if (!token) {
