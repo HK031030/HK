@@ -40,15 +40,31 @@
           登录
         </el-button>
         <!-- 添加注册链接 -->
-        <div class="register-link">
-          <span>还没有账号？</span>
-          <router-link to="/register">立即注册</router-link>
+        <div class="register-link" style="display: flex">
+          <div style="flex: 1">还没有账号？请 <span style="color: #0f9876; cursor: pointer" @click="$router.push('/register')">注册</span></div>
+          <div style="flex: 1; text-align: right"><span style="color: #0f9876; cursor: pointer" @click="handleForgetPass">忘记密码</span></div>
         </div>
       </form>
     </div>
     <div class="el-login-footer">
       <span>Copyright © 2025 驾校管理系统</span>
     </div>
+
+    <el-dialog title="忘记密码" :visible.sync="forgetPassDialogVis">
+      <el-form :model="forgetUserForm" label-width="80px" style="padding-right: 20px">
+        <el-form-item label="用户名">
+          <el-input v-model="forgetUserForm.username" autocomplete="off" placeholder="请输入用户名"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="forgetUserForm.phone" autocomplete="off" placeholder="请输入手机号"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="forgetPassDialogVis = false">取 消</el-button>
+        <el-button type="primary" @click="resetPassword">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -65,6 +81,8 @@ const username = ref('')
 const password = ref('')
 const role = ref('ADMIN') // 默认角色为管理员
 const loading = ref(false)
+const forgetPassDialogVis = ref(false)
+const forgetUserForm = {}
 
 // 访问验证码组件的方法
 const captchaRef = ref(null)
@@ -75,8 +93,13 @@ const handleLogin = async () => {
     return
   }
 
+
+
   // 验证验证码
-  if (captchaRef.value.userInput !== captchaRef.value.captcha) {
+  const captcha = captchaRef.value.captcha; // 获取验证码
+  const userInput = captchaRef.value.userInput; // 获取用户输入的验证码
+
+  if (userInput !== captcha) {
     ElMessage.error('验证码错误，请重试。')
     return
   }
@@ -104,6 +127,30 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
+
+const handleForgetPass = () => {
+  // 初始化忘记密码表单的数据
+  forgetUserForm.value = {}
+  forgetPassDialogVis.value = true
+}
+
+const resetPassword = async () => {
+  try {
+    const res = await this.$request.put('/password', forgetUserForm.value)
+    if (res.code === '200') {
+      ElMessage.success('重置成功')
+      forgetPassDialogVis.value = false
+    } else {
+      ElMessage.error(res.msg)
+    }
+  } catch (error) {
+    console.error('重置密码失败:', error)
+    ElMessage.error('重置密码失败，请稍后重试')
+  }
+}
+
+
+
 </script>
 
 <style lang="scss" scoped>

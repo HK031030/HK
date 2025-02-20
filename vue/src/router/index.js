@@ -1,5 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push (location){
+  return originalPush.call(this, location).catch(err => err)
+}
+
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -10,7 +16,9 @@ const router = createRouter({
       path: '/manager',
       component: () => import('@/views/Manager.vue'),
       children: [
-        { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue'),  }
+        { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue'),  },
+        { path: 'person', meta: { name: '个人信息' }, component: () => import('@/views/manager/Person.vue'),  },
+        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/manager/Password.vue'),  }
       ]
     },
     {

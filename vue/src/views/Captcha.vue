@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, defineExpose } from 'vue'
 
 const captcha = ref('')
 const userInput = ref('')
@@ -34,6 +34,12 @@ const generateCaptcha = () => {
 // 组件挂载时生成验证码
 onMounted(() => {
   generateCaptcha()
+})
+
+// 暴露变量给父组件
+defineExpose({
+  captcha,
+  userInput
 })
 </script>
 
