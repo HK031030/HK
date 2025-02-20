@@ -5,7 +5,7 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/login', component: () => import('@/views/Login.vue') },
-    { path: '/register', component: () => import('@/views/Register.vue') }, 
+    { path: '/register', component: () => import('@/views/Register.vue') },
     {
       path: '/manager',
       component: () => import('@/views/Manager.vue'),
@@ -36,7 +36,7 @@ const router = createRouter({
   ]
 })
 
-// 路由守卫
+// 修改路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const publicPages = ['/login', '/register', '/forgot-password']
