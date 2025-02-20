@@ -30,6 +30,7 @@
           <el-select v-model="role" placeholder="选择角色" style="width: 100%">
             <el-option value="USER" label="用户"></el-option>
             <el-option value="ADMIN" label="管理员" :selected="true"></el-option>
+            <el-option value="COACH" label="教练" :selected="true"></el-option>
           </el-select>
         </div>
 

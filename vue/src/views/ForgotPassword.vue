@@ -33,6 +33,7 @@
           <el-select v-model="form.role" placeholder="请选择角色" style="width: 100%">
             <el-option label="管理员" value="ADMIN" />
             <el-option label="用户" value="USER" />
+            <el-option label="教练" value="COACH" />
           </el-select>
         </el-form-item>
 
