@@ -70,27 +70,37 @@
 
 <script setup>
 
-import router from "@/router/index.js";
+// import router from "@/router/index.js";
+import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
-const handleCommand = (command) => {
+const router = useRouter()
+
+const handleCommand = async  (command) => {
   if (command === 'logout') {
-    ElMessageBox.confirm(
-      '确认退出系统吗?',
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    ).then(() => {
+    try {
+      await ElMessageBox.confirm(
+        '确认退出系统吗?',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      )
+      
       // 清除本地存储的登录信息
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
+      
       // 跳转到登录页
-      router.replace('/login')
+      await router.push('/login')
       ElMessage.success('退出成功')
-    }).catch(() => {})
+    } catch (error) {
+      if (error !== 'cancel') {
+        console.error('退出失败:', error)
+      }
+    }
   }
 }
 

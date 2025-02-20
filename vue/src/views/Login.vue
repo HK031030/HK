@@ -65,14 +65,14 @@
 import { ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+// import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/user'
 import CaptchaComponent from './Captcha.vue' // 引入验证码组件
 
 const router = useRouter()
 const username = ref('')
 const password = ref('')
-const role = ref('ADMIN') // 默认角色为管理员
+const role = ref('USER') // 默认角色为管理员
 const loading = ref(false)
 const forgetPassDialogVis = ref(false)
 const forgetUserForm = {}
@@ -92,8 +92,8 @@ const handleLogin = async () => {
     return
   }
 
-  const captchaText = captchaRef.value.captcha.value // 注意这里要访问 .value
-  const userInput = captchaRef.value.userInput.value // 注意这里要访问 .value
+  const captchaText = captchaRef.value.captcha// 注意这里要访问 .value
+  const userInput = captchaRef.value.userInput // 注意这里要访问 .value
 
   if (!userInput) {
     ElMessage.error('请输入验证码')
@@ -123,8 +123,8 @@ const handleLogin = async () => {
       const token = res.data.token || res.data.username
       localStorage.setItem('token', token)
 
-      // console.log('存储的用户信息:', localStorage.getItem('userInfo'))
-      // console.log('存储的token:', localStorage.getItem('token'))
+      console.log('存储的用户信息:', localStorage.getItem('userInfo'))
+       console.log('存储的token:', localStorage.getItem('token'))
 
       ElMessage.success(res.msg || '登录成功')
       

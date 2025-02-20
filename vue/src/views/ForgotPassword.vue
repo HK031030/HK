@@ -60,6 +60,8 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Phone, Message } from '@element-plus/icons-vue'
+import { verifyAndResetPassword } from '@/api/user'
+
 
 const router = useRouter()
 const loading = ref(false)
@@ -100,18 +102,44 @@ const checkVerifyLimit = () => {
   return true
 }
 
-// 修改 ForgotPassword.vue 中的验证逻辑
+// 修改验证逻辑
 const handleVerify = async () => {
   try {
+    // 表单验证
+    await formRef.value.validate()
+    
+    loading.value = true
+    console.log('发送验证请求:', {
+      phone: form.phone,
+      email: form.email,
+      role: form.role
+    })
+
     const res = await verifyAndResetPassword({
       phone: form.phone,
       email: form.email,
       role: form.role
-      // 根据后端要求添加或修改字段
     })
-    console.log('API响应:', res) // 调试用
+
+    console.log('接收响应数据:', res)
+
+    // 修改判断逻辑
+    if (res.code === '200') {  // 使用字符串比较
+      ElMessage({
+        type: 'success',
+        duration: 5000,
+        message: '验证成功，密码已重置为：123456，请登录后及时修改密码'
+      })
+      router.push('/login')
+    } else {
+      // 非200状态码都当作失败处理
+      ElMessage.error(res.msg || '验证失败')
+    }
   } catch (error) {
-    console.error('API错误:', error)
+    console.error('验证失败:', error)
+    ElMessage.error(error.message || '验证失败，请检查输入信息是否正确')
+  } finally {
+    loading.value = false
   }
 }
 </script>
