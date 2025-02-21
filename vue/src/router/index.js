@@ -20,6 +20,9 @@ const router = createRouter({
           path: 'password', 
           meta: { name: '修改密码' }, 
           component: () => import('@/views/manager/Password.vue') 
+        },
+        {
+          path: 'user',meta: { name: '用户管理' },component: () => import('@/views/manager/User.vue')
         }
       ]
     },
@@ -38,6 +41,7 @@ const router = createRouter({
 
 // 修改路由守卫
 router.beforeEach((to, from, next) => {
+  console.log('当前路由:', to.path)
   const token = localStorage.getItem('token')
   const publicPages = ['/login', '/register', '/forgot-password']
   

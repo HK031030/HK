@@ -19,8 +19,8 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile" @click="$router.push('/person')">个人资料</el-dropdown-item>
-              <el-dropdown-item command="password" @click="$router.push('/password')">修改密码</el-dropdown-item>
+              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
+              <el-dropdown-item command="password">修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -28,11 +28,6 @@
       </div>
     </div>
     <!-- 下面部分开始 -->
-
-    <el-main>
-      <router-view @update:user="updateUser" />
-    </el-main>
-
     <div style="display: flex">
       <div class="manager-main-left">
         <el-menu :default-active="router.currentRoute.value.path"
@@ -54,7 +49,7 @@
               <el-icon><Menu /></el-icon>
               <span>用户管理</span>
             </template>
-            <el-menu-item index="/manager/admin">管理员信息</el-menu-item>
+            <el-menu-item index="/user">用户信息</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </div>
@@ -69,14 +64,12 @@
 </template>
 
 <script setup>
-
-// import router from "@/router/index.js";
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
 const router = useRouter()
 
-const handleCommand = async  (command) => {
+const handleCommand = async (command) => {
   if (command === 'logout') {
     try {
       await ElMessageBox.confirm(
@@ -89,29 +82,24 @@ const handleCommand = async  (command) => {
         }
       )
       
-      // 清除本地存储的登录信息
-      localStorage.removeItem('token')
-      localStorage.removeItem('userInfo')
+      // 清除所有本地存储
+      localStorage.clear()
       
-      // 跳转到登录页
+      // 使用 await 确保跳转完成
       await router.push('/login')
       ElMessage.success('退出成功')
     } catch (error) {
-      if (error !== 'cancel') {
-        console.error('退出失败:', error)
-      }
+      // 用户取消操作，不做处理
+      console.log('用户取消退出:', error)
     }
+  } else if (command === 'profile') {
+    router.push('/manager/person')
+  } else if (command === 'password') {
+    router.push('/manager/password')
   }
 }
-
-const updateUser = (user) => {
-  // 获取子组件传递过来的数据，更新当前页面的数据
-  this.user = JSON.parse(JSON.stringify(user))  //让父级的对象和子级的对象毫无关联
-}
-
 </script>
 
 <style scoped>
 @import "@/assets/css/manager.css";
 </style>
-

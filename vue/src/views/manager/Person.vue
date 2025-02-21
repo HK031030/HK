@@ -5,12 +5,12 @@
         <div style="margin: 15px; text-align: center">
           <el-upload
               class="avatar-uploader"
-              action="https://localhost:9090/file/upload"
-              :headers="{ token: user.token }"
+              action="http://192.168.43.63:8080/api/file/upload"
+              :headers="{ token }"
               :show-file-list="false"
               :on-success="handleAvatarSuccess">
             <img v-if="user.avatar" :src="user.avatar" class="avatar" />
-            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+            <el-icon v-else><Plus /></el-icon>
           </el-upload>
         </div>
         <el-form-item label="用户名" prop="username">
@@ -29,58 +29,44 @@
           <el-input type="textarea" v-model="user.address" placeholder="地址"></el-input>
         </el-form-item>
         <div style="text-align: center">
-          <el-button type="primary" @click="update"></el-button>
+          <el-button type="primary" @click="update">保存</el-button>
         </div>
       </el-form>
     </el-card>
   </div>
 </template>
 
-<script>
-export default {
-  name: "Person",
-  data() {
-    return {
-      user: JSON.parse(localStorage.getItem('honey-user') || '{}')
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import request from '@/utils/request'
+
+const user = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
+const token = localStorage.getItem('token')
+
+const update = async () => {
+  try {
+    const res = await request.put('/api/user/update', user.value)
+    if (res.code === '200') {
+      ElMessage.success('保存成功')
+      localStorage.setItem('userInfo', JSON.stringify(user.value))
+    } else {
+      ElMessage.error(res.msg || '保存失败')
     }
-  },
-  created() {
-
-  },
-  methods: {
-    update() {
-      //保存当前的用户信息到数据库
-      this.$request.put('/user/update', this.user).then(res => {
-        if (res.code === '200') {
-          //成功更新
-          this.$message.success('保存成功')
-          //更新浏览器缓存里的用户信息
-          localStorage.setItem('honey-user',JSON.stringify(this.user))
-          //触发父级的数据更新
-          this.$emit('updateUser',this.user)
-
-        } else {
-          this.$message.error(res.msg)
-        }
-      })
-
-    },
-    handleAvatarSuccess(response , file, filelist) {
-      console.log(response)
-      //把user的头像属性换成上传的图片的链接
-      this.user.avatar = response.data
-    }
+  } catch (error) {
+    console.error('更新失败:', error)
+    ElMessage.error('更新失败')
   }
+}
+
+const handleAvatarSuccess = (response) => {
+  console.log('上传响应:', response)
+  user.value.avatar = response.data
 }
 </script>
 
-<style>
-::v-deep .el-form-item__label {
-  font-weight: bold;
-}
-::v-deep .el-upload {
-  border-radius: 50%;
-}
+<style scoped>
 .avatar-uploader .el-upload {
   border: 1px dashed #d9d9d9;
   border-radius: 6px;
@@ -88,9 +74,11 @@ export default {
   position: relative;
   overflow: hidden;
 }
+
 .avatar-uploader .el-upload:hover {
   border-color: #409EFF;
 }
+
 .avatar-uploader-icon {
   font-size: 28px;
   color: #8c939d;
@@ -100,10 +88,15 @@ export default {
   text-align: center;
   border-radius: 50%;
 }
+
 .avatar {
   width: 178px;
   height: 178px;
   display: block;
   border-radius: 50%;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: bold;
 }
 </style>
