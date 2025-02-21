@@ -48,6 +48,8 @@
               <el-icon><Menu /></el-icon>
               <span>信息管理</span>
             </template>
+            <el-menu-item index="/notice">新闻信息</el-menu-item>
+            <el-menu-item index="/notice">系统公告</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="2">
             <template #title>

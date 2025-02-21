@@ -89,7 +89,7 @@ import CaptchaComponent from './Captcha.vue' // 引入验证码组件
 const router = useRouter()
 const username = ref('')
 const password = ref('')
-const role = ref('USER') // 默认角色为管理员
+const role = ref('USER') // 默认角色为
 const loading = ref(false)
 const forgetPassDialogVis = ref(false)
 const forgetUserForm = {}
