@@ -34,11 +34,11 @@
     </el-main>
 
     <div style="display: flex">
+
       <div class="manager-main-left">
         <el-menu :default-active="router.currentRoute.value.path"
                  :default-openeds="['1', '2']"
-                 router
-        >
+                 router>
           <el-menu-item index="/manager/home">
             <el-icon><HomeFilled /></el-icon>
             <span>系统首页</span>
@@ -48,23 +48,24 @@
               <el-icon><Menu /></el-icon>
               <span>信息管理</span>
             </template>
+            <el-menu-item index="/notice">新闻信息</el-menu-item>
+            <el-menu-item index="/notice">系统公告</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="2">
             <template #title>
               <el-icon><Menu /></el-icon>
               <span>用户管理</span>
             </template>
-            <el-menu-item index="/manager/admin">管理员信息</el-menu-item>
+            <el-menu-item index="/user">用户信息</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </div>
+
       <div class="manager-main-right">
+
         <RouterView />
       </div>
     </div>
-    <!-- 下面部分结束 -->
-
-
   </div>
 </template>
 

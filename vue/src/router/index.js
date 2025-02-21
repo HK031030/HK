@@ -10,17 +10,14 @@ const router = createRouter({
     {
       path: '/manager',
       component: () => import('@/views/Manager.vue'),
+      redirect: '/home',  //重新定向到主页
       children: [
         { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue'),  },
         { path: 'person', meta: { name: '个人信息' }, component: () => import('@/views/manager/Person.vue'),  },
-        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/manager/Password.vue'),  }
-      ]
-    },
-    {
-      path: '/front',
-      component: () => import('@/views/Front.vue'),
-      children: [
-        { path: 'home', component: () => import('@/views/front/Home.vue'),  }
+        { path: 'user', meta: { name: '用户信息' }, component: () => import('@/views/manager/User.vue'),  },
+        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/manager/Password.vue'),  },
+        { path: 'news', meta: { name: '新闻信息' }, component: () => import('@/views/manager/News.vue'),  },
+        { path: 'notice', meta: { name: '系统公告' }, component: () => import('@/views/manager/Notice.vue'),  }
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },

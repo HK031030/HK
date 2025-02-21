@@ -39,14 +39,13 @@
       <el-pagination
           @current-change="handleCurrentChange"
           :current-page="pageNum"
-          :page-sizes="[100, 200, 300, 400]"
           :page-size="pageSize"
           layout="total,prev, pager, next"
           :total="total">
       </el-pagination>
     </div>
 
-    <el-dialog title="收货地址" :visible.sync="formVisible" width="30%">
+    <el-dialog title="用户信息" :visible.sync="formVisible" width="30%">
       <el-form :model="form" label-width="80px" style="padding-right: 20px" :rules="rules" ref="formRef">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="用户名"></el-input>
