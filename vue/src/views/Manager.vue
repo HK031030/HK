@@ -29,10 +29,6 @@
     </div>
     <!-- 下面部分开始 -->
 
-    <el-main>
-      <router-view @update:user="updateUser" />
-    </el-main>
-
     <div style="display: flex">
       <div class="manager-main-left">
         <el-menu :default-active="router.currentRoute.value.path"
@@ -61,7 +57,7 @@
         </el-menu>
       </div>
       <div class="manager-main-right">
-        <RouterView />
+        <RouterView @update:user="updateUser" />
       </div>
     </div>
     <!-- 下面部分结束 -->

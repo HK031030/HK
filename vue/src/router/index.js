@@ -42,20 +42,32 @@ const router = createRouter({
 
 // 修改路由守卫
 router.beforeEach((to, from, next) => {
-  console.log('当前路由:', to.path)
   const token = localStorage.getItem('token')
   const publicPages = ['/login', '/register', '/forgot-password']
-  
-  if (publicPages.includes(to.path)) {
-    next()
-    return
-  } else {
-    if (!token) {
-      next('/login')
+
+  // 根路径重定向
+  if (to.path === '/') {
+    if (token) {
+      next('/manager/home')
     } else {
-      next()
+      next('/login')
     }
+    return
   }
+
+  // 已登录用户访问登录页
+  if (publicPages.includes(to.path) && token) {
+    next('/manager/home')
+    return
+  }
+
+  // 未登录用户访问非公共页面
+  if (!publicPages.includes(to.path) && !token) {
+    next('/login')
+    return
+  }
+
+  next()
 })
 
 export default router

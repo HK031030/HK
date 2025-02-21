@@ -1,35 +1,62 @@
 <template>
-  <div>
-    <el-card style="width: 50%">
-      <el-form :model="user" label-width="80px" style="padding-right: 20px">
-        <div style="margin: 15px; text-align: center">
+  <div class="person-container">
+    <el-card class="person-card">
+      <template #header>
+        <div class="card-header">
+          <span class="header-title">个人资料</span>
+        </div>
+      </template>
+      <el-form :model="user" label-width="80px" class="person-form">
+        <div class="avatar-container">
           <el-upload
+              v-loading="uploading"
+              element-loading-text="上传中..."
               class="avatar-uploader"
-              action="http://192.168.43.63:8080/api/file/upload"
+              action="/api/file/upload"
               :headers="{ token }"
               :show-file-list="false"
-              :on-success="handleAvatarSuccess">
+              :on-success="handleAvatarSuccess"
+              :on-error="handleAvatarError"
+              :before-upload="beforeAvatarUpload"
+              accept="image/*">
             <img v-if="user.avatar" :src="user.avatar" class="avatar" />
-            <el-icon v-else><Plus /></el-icon>
+            <el-icon v-else class="avatar-icon"><Plus /></el-icon>
           </el-upload>
+          <div class="upload-tip">点击上传头像</div>
         </div>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="user.username" placeholder="用户名" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="user.name" placeholder="姓名"></el-input>
-        </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="user.phone" placeholder="电话"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="user.email" placeholder="邮箱"></el-input>
-        </el-form-item>
+        
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="user.username" disabled></el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="姓名" prop="name">
+              <el-input v-model="user.name"></el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="电话" prop="phone">
+              <el-input v-model="user.phone"></el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="user.email"></el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-form-item label="地址" prop="address">
-          <el-input type="textarea" v-model="user.address" placeholder="地址"></el-input>
+          <el-input type="textarea" v-model="user.address" rows="3"></el-input>
         </el-form-item>
-        <div style="text-align: center">
-          <el-button type="primary" @click="update">保存</el-button>
+
+        <div class="form-footer">
+          <el-button type="primary" @click="update" :icon="Check">保存修改</el-button>
         </div>
       </el-form>
     </el-card>
@@ -37,13 +64,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Check } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
-const user = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
+const user = ref({
+  ...JSON.parse(localStorage.getItem('userInfo') || '{}'),
+  avatar: localStorage.getItem('userInfo') ? 
+    JSON.parse(localStorage.getItem('userInfo')).avatar : ''
+})
 const token = localStorage.getItem('token')
+const uploading = ref(false)
 
 const update = async () => {
   try {
@@ -60,42 +92,134 @@ const update = async () => {
   }
 }
 
-const handleAvatarSuccess = (response) => {
-  console.log('上传响应:', response)
-  user.value.avatar = response.data
+const handleAvatarSuccess = async (response) => {
+  uploading.value = false
+  console.log('上传成功:', response)
+  if (response.code === '200') {
+    user.value.avatar = response.data
+    ElMessage.success('头像上传成功')
+    // 更新用户信息
+    update()
+  } else {
+    ElMessage.error(response.msg || '上传失败')
+  }
+}
+
+const handleAvatarError = (error) => {
+  uploading.value = false
+  console.error('上传失败:', error)
+  ElMessage.error('头像上传失败，请重试')
+}
+
+const beforeAvatarUpload = (file) => {
+  uploading.value = true
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件！')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB！')
+    return false
+  }
+  return true
 }
 </script>
 
 <style scoped>
+.person-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.person-card {
+  width: 800px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.avatar-container {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.avatar-uploader {
+  margin: 0 auto;
+}
+
 .avatar-uploader .el-upload {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+  border: 2px dashed #409EFF;
+  border-radius: 50%;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.3s;
+  width: 178px;
+  height: 178px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-uploader .el-upload:hover {
   border-color: #409EFF;
+  box-shadow: 0 0 10px rgba(64,158,255,0.3);
 }
 
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  width: 178px;
-  height: 178px;
-  line-height: 178px;
-  text-align: center;
-  border-radius: 50%;
-}
 .avatar {
   width: 178px;
   height: 178px;
-  display: block;
   border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-icon {
+  font-size: 28px;
+  color: #8c939d;
+}
+
+.upload-tip {
+  margin-top: 10px;
+  color: #909399;
+  font-size: 14px;
+}
+
+.person-form {
+  padding: 20px;
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 30px;
 }
 
 :deep(.el-form-item__label) {
+  font-weight: bold;
+  color: #606266;
+}
+
+:deep(.el-input__inner) {
+  border-radius: 4px;
+}
+
+:deep(.el-textarea__inner) {
+  border-radius: 4px;
+}
+
+:deep(.el-button) {
+  padding: 12px 30px;
   font-weight: bold;
 }
 </style>

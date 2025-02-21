@@ -90,42 +90,19 @@ request.interceptors.request.use(config => {
 // response 拦截器
 // 可以在接口响应后统一处理结果
 request.interceptors.response.use(
-    response => {
-        const res = response.data;
-        // 直接返回数据，因为后端已经按照约定格式返回
-        return res;
-    },
-    error => {
-        // 模拟数据处理
-        // if (MOCK_ENABLED && error.config && mockData[error.config.url]) {
-        //     return mockData[error.config.url](error.config);
-        // }
-
-        if (error.response) {
-            switch (error.response.status) {
-                case 401:
-                    ElMessage.error('未授权，请重新登录');
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userInfo');
-                    router.push('/login');
-                    break;
-                case 403:
-                    ElMessage.error('拒绝访问');
-                    break;
-                case 404:
-                    ElMessage.error('请求错误，未找到该资源');
-                    break;
-                case 500:
-                    ElMessage.error('服务器错误');
-                    break;
-                default:
-                    ElMessage.error(error.response.data?.msg || '未知错误');
-            }
-        } else {
-            console.error(error.message)
-        }
-        return Promise.reject(error)
+  response => {
+    const res = response.data
+    if (res.code !== '200') {
+      ElMessage.error(res.msg || '请求失败')
+      return Promise.reject(new Error(res.msg || '请求失败'))
     }
+    return res
+  },
+  error => {
+    console.error('请求错误:', error)
+    ElMessage.error(error.message || '请求失败')
+    return Promise.reject(error)
+  }
 )
 
 export default request;
