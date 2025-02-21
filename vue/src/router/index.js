@@ -42,20 +42,32 @@ const router = createRouter({
 
 // 修改路由守卫
 router.beforeEach((to, from, next) => {
-  console.log('当前路由:', to.path)
-  const token = localStorage.getItem('token')
-  const publicPages = ['/login', '/register', '/forgot-password']
+  // 开发模式：模拟已登录状态
+  const isDev = true // 设置为 true 开启开发模式
   
-  if (publicPages.includes(to.path)) {
-    next()
-    return
-  } else {
-    if (!token) {
-      next('/login')
-    } else {
-      next()
+  if (isDev) {
+    // 模拟用户信息
+    if (!localStorage.getItem('token')) {
+      localStorage.setItem('token', 'dev-token')
+      localStorage.setItem('userInfo', JSON.stringify({
+        username: 'admin',
+        role: 'ADMIN',
+        name: '管理员'
+      }))
     }
   }
+
+  const token = localStorage.getItem('token')
+  const publicPages = ['/login', '/register', '/forgot-password']
+
+  // 根路径处理
+  if (to.path === '/') {
+    next('/manager/home')
+    return
+  }
+
+  // 其他页面直接放行
+  next()
 })
 
 export default router

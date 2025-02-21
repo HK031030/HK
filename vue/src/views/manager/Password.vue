@@ -1,14 +1,18 @@
 <template>
   <div class="password-container">
-    <el-card class="box-card">
+    <el-card class="password-card">
       <template #header>
         <div class="card-header">
-          <span>{{ isForget ? '重置密码' : '修改密码' }}</span>
+          <span class="header-title">{{ isForget ? '重置密码' : '修改密码' }}</span>
         </div>
       </template>
       
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <!-- 忘记密码时显示用户名和手机号验证 -->
+      <el-form 
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="100px"
+        class="password-form">
         <template v-if="isForget">
           <el-form-item label="用户名" prop="username">
             <el-input 
@@ -25,39 +29,38 @@
           </el-form-item>
         </template>
         
-        <!-- 从系统内修改密码时显示原密码 -->
         <el-form-item v-else label="原密码" prop="oldPassword">
           <el-input 
             v-model="form.oldPassword" 
             type="password" 
             show-password
-            placeholder="请输入原密码">
+            :prefix-icon="Lock">
           </el-input>
         </el-form-item>
-        
+
         <el-form-item label="新密码" prop="newPassword">
           <el-input 
             v-model="form.newPassword" 
             type="password" 
             show-password
-            placeholder="请输入新密码">
+            :prefix-icon="Key">
           </el-input>
         </el-form-item>
-        
+
         <el-form-item label="确认密码" prop="confirmPassword">
           <el-input 
             v-model="form.confirmPassword" 
             type="password" 
             show-password
-            placeholder="请再次输入新密码">
+            :prefix-icon="Check">
           </el-input>
         </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="submitForm">确认修改</el-button>
-          <el-button @click="resetForm">重置</el-button>
+
+        <div class="form-footer">
+          <el-button @click="resetForm" :icon="Refresh">重置</el-button>
+          <el-button type="primary" @click="submitForm" :icon="Edit">确认修改</el-button>
           <el-button v-if="isForget" @click="backToLogin">返回登录</el-button>
-        </el-form-item>
+        </div>
       </el-form>
     </el-card>
   </div>
@@ -67,12 +70,13 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Lock, Key, Check, Refresh, Edit } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
 const formRef = ref()
 
-// 判断是否是忘记密码
 const isForget = computed(() => route.query.type === 'forget')
 
 const form = reactive({
@@ -83,7 +87,6 @@ const form = reactive({
   confirmPassword: ''
 })
 
-// 根据不同模式设置验证规则
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' }
@@ -120,19 +123,23 @@ const submitForm = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        // 根据不同模式调用不同的API
         if (isForget.value) {
-          // 调用忘记密码的API
-          // await resetPassword(form)
           ElMessage.success('密码重置成功，请重新登录')
           router.push('/login')
         } else {
-          // 调用修改密码的API
-          // await changePassword(form)
-          ElMessage.success('密码修改成功，请重新登录')
-          localStorage.removeItem('token')
-          localStorage.removeItem('userInfo')
-          router.push('/login')
+          const res = await request.post('/api/user/updatePassword', {
+            oldPassword: form.oldPassword,
+            newPassword: form.newPassword
+          })
+          if (res.code === '200') {
+            ElMessage.success('密码修改成功')
+            resetForm()
+            localStorage.removeItem('token')
+            localStorage.removeItem('userInfo')
+            router.push('/login')
+          } else {
+            ElMessage.error(res.msg || '修改失败')
+          }
         }
       } catch (error) {
         console.error('操作失败:', error)
@@ -154,16 +161,56 @@ const backToLogin = () => {
 <style scoped>
 .password-container {
   padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
-.box-card {
-  max-width: 600px;
-  margin: 0 auto;
+.password-card {
+  width: 600px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.password-form {
+  padding: 30px 20px;
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 40px;
+}
+
+:deep(.el-input__inner) {
+  padding-left: 45px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: bold;
+  color: #606266;
+}
+
+:deep(.el-button) {
+  padding: 12px 30px;
+  margin: 0 10px;
+  font-weight: bold;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 25px;
+}
+
+:deep(.el-input__prefix) {
+  font-size: 18px;
+  left: 10px;
 }
 </style>
