@@ -29,7 +29,7 @@
           <el-input type="textarea" v-model="user.address" placeholder="地址"></el-input>
         </el-form-item>
         <div style="text-align: center">
-          <el-button type="primary" @click="update"></el-button>
+          <el-button type="primary" @click="update">保存</el-button>
         </div>
       </el-form>
     </el-card>
