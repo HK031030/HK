@@ -19,8 +19,8 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-              <el-dropdown-item command="password">修改密码</el-dropdown-item>
+              <el-dropdown-item command="profile" @click.native="$router.push('/person')">个人资料</el-dropdown-item>
+              <el-dropdown-item command="password" @click.native="$router.push('/password')">修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -28,6 +28,11 @@
       </div>
     </div>
     <!-- 下面部分开始 -->
+
+    <el-main>
+      <router-view @update:user="updateUser" />
+    </el-main>
+
     <div style="display: flex">
       <div class="manager-main-left">
         <el-menu :default-active="router.currentRoute.value.path"
@@ -98,8 +103,15 @@ const handleCommand = async (command) => {
     router.push('/manager/password')
   }
 }
+
+const updateUser = (user) => {
+  // 获取子组件传递过来的数据，更新当前页面的数据
+  this.user = JSON.parse(JSON.stringify(user))  //让父级的对象和子级的对象毫无关联
+}
+
 </script>
 
 <style scoped>
 @import "@/assets/css/manager.css";
 </style>
+

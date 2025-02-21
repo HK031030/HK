@@ -70,6 +70,7 @@ const request = axios.create({
 // };
 
 // request 拦截器
+// 可以自请求发送前对请求做一些处理
 request.interceptors.request.use(config => {
     // 打印请求信息
     if (config.url === '/register') {
@@ -87,6 +88,7 @@ request.interceptors.request.use(config => {
 })
 
 // response 拦截器
+// 可以在接口响应后统一处理结果
 request.interceptors.response.use(
     response => {
         const res = response.data;
@@ -120,10 +122,10 @@ request.interceptors.response.use(
                     ElMessage.error(error.response.data?.msg || '未知错误');
             }
         } else {
-            ElMessage.error('网络错误，请稍后重试');
+            console.error(error.message)
         }
-        return Promise.reject(error);
+        return Promise.reject(error)
     }
-);
+)
 
 export default request;
