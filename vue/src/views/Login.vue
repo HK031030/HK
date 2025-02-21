@@ -30,19 +30,29 @@
           <el-select v-model="role" placeholder="选择角色" style="width: 100%">
             <el-option value="USER" label="用户"></el-option>
             <el-option value="ADMIN" label="管理员" :selected="true"></el-option>
+            <el-option value="COACH" label="教练" :selected="true"></el-option>
           </el-select>
         </div>
 
         <!-- 验证码组件 -->
-        <captcha-component ref="captcha"/>
+        <div class="form-item">
+          <captcha-component ref="captchaRef"/>
+        </div>
 
         <el-button type="primary" style="width:100%;" @click="handleLogin" :loading="loading">
           登录
         </el-button>
         <!-- 添加注册链接 -->
         <div class="register-link" style="display: flex">
-          <div style="flex: 1">还没有账号？请 <span style="color: #0f9876; cursor: pointer" @click="$router.push('/register')">注册</span></div>
-          <div style="flex: 1; text-align: right"><span style="color: #0f9876; cursor: pointer" @click="handleForgetPass">忘记密码</span></div>
+          <div style="flex: 1">还没有账号？请 
+            <span style="color: #0f9876; cursor: pointer" @click="$router.push('/register')">注册</span>
+          </div>
+          <div style="flex: 1; text-align: right">
+            <span 
+              style="color: #0f9876; cursor: pointer" 
+              @click="handleForgetPass"
+            >忘记密码</span>
+          </div>
         </div>
       </form>
     </div>
@@ -50,7 +60,7 @@
       <span>Copyright © 2025 驾校管理系统</span>
     </div>
 
-    <el-dialog title="忘记密码" :visible.sync="forgetPassDialogVis">
+    <el-dialog title="忘记密码" v-model="forgetPassDialogVis">
       <el-form :model="forgetUserForm" label-width="80px" style="padding-right: 20px">
         <el-form-item label="用户名">
           <el-input v-model="forgetUserForm.username" autocomplete="off" placeholder="请输入用户名"></el-input>
@@ -71,15 +81,15 @@
 <script setup>
 import { ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+// import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/user'
 import CaptchaComponent from './Captcha.vue' // 引入验证码组件
 
 const router = useRouter()
 const username = ref('')
 const password = ref('')
-const role = ref('ADMIN') // 默认角色为管理员
+const role = ref('USER') // 默认角色为管理员
 const loading = ref(false)
 const forgetPassDialogVis = ref(false)
 const forgetUserForm = {}
@@ -96,11 +106,22 @@ const handleLogin = async () => {
 
 
   // 验证验证码
-  const captcha = captchaRef.value.captcha; // 获取验证码
-  const userInput = captchaRef.value.userInput; // 获取用户输入的验证码
+  if (!captchaRef.value) {
+    ElMessage.error('验证码组件加载失败')
+    return
+  }
 
-  if (userInput !== captcha) {
-    ElMessage.error('验证码错误，请重试。')
+  const captchaText = captchaRef.value.captcha// 注意这里要访问 .value
+  const userInput = captchaRef.value.userInput // 注意这里要访问 .value
+
+  if (!userInput) {
+    ElMessage.error('请输入验证码')
+    return
+  }
+
+  if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
+    ElMessage.error('验证码错误，请重试')
+    captchaRef.value.generateCaptcha()
     return
   }
 
@@ -112,44 +133,45 @@ const handleLogin = async () => {
       role: role.value // 添加角色到登录请求中
     })
 
-    if (res.status === 200) {
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
-      ElMessage.success('登录成功')
-      router.push('/manager/home')
+    console.log('登录响应:', res)
+
+    if (res.code === '200') {
+      // 存储用户信息
+      localStorage.setItem('userInfo', JSON.stringify(res.data))
+      // 如果后端没有返回token，使用用户名作为临时token
+      const token = res.data.token || res.data.username
+      localStorage.setItem('token', token)
+
+      console.log('存储的用户信息:', localStorage.getItem('userInfo'))
+       console.log('存储的token:', localStorage.getItem('token'))
+
+      ElMessage.success(res.msg || '登录成功')
+      
+      // 使用 await 和 try-catch 包裹路由跳转
+      try {
+        await router.push({
+          path: '/manager/home',
+          replace: true
+        })
+      } catch (routerError) {
+        console.error('路由跳转失败:', routerError)
+      }
     } else {
-      ElMessage.error(res.message)
+      ElMessage.error(res.msg || '登录失败')
+      captchaRef.value?.generateCaptcha()
     }
   } catch (error) {
     console.error('登录失败:', error)
     ElMessage.error('登录失败，请稍后重试')
+    captchaRef.value?.generateCaptcha()
   } finally {
     loading.value = false
   }
 }
 
 const handleForgetPass = () => {
-  // 初始化忘记密码表单的数据
-  forgetUserForm.value = {}
-  forgetPassDialogVis.value = true
+  router.push('/forgot-password')
 }
-
-const resetPassword = async () => {
-  try {
-    const res = await this.$request.put('/password', forgetUserForm.value)
-    if (res.code === '200') {
-      ElMessage.success('重置成功')
-      forgetPassDialogVis.value = false
-    } else {
-      ElMessage.error(res.msg)
-    }
-  } catch (error) {
-    console.error('重置密码失败:', error)
-    ElMessage.error('重置密码失败，请稍后重试')
-  }
-}
-
-
 
 </script>
 
@@ -216,6 +238,16 @@ const resetPassword = async () => {
 
     &:hover {
       color: #79bbff;
+    }
+  }
+}
+.register-link {
+  margin-top: 20px;
+  
+  span {
+    &:hover {
+      color: #0f9876;
+      text-decoration: underline;
     }
   }
 }

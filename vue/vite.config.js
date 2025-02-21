@@ -22,6 +22,15 @@ export default defineConfig({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
     }),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://192.168.43.63:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
   // 预加载项目必需的组件
   optimizeDeps: {
     include: [
