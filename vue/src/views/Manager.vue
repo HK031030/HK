@@ -2,8 +2,8 @@
   <div class="manager-container">
     <div class="manager-header">
       <div class="manager-header-left">
-        <img src="../assets/imgs/logo.png" alt="">
-        <div class="title">后台管理系统</div>
+        <img src="../assets/imgs/logo1.png" alt="">
+        <div class="title">驾校预约系统</div>
       </div>
       <div class="manager-header-center">
         <el-breadcrumb separator="/">
@@ -32,7 +32,7 @@
     <div style="display: flex">
       <div class="manager-main-left">
         <el-menu :default-active="router.currentRoute.value.path"
-                 :default-openeds="['1', '2']"
+                 :default-openeds="['1', '2','3']"
                  router
         >
           <el-menu-item index="/manager/home">
@@ -45,7 +45,7 @@
               <span>信息管理</span>
             </template>
             <el-menu-item index="/notice">新闻信息</el-menu-item>
-            <el-menu-item index="/notice">系统公告</el-menu-item>
+            <el-menu-item index="/manager/notice">系统公告</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="2">
             <template #title>
@@ -54,6 +54,21 @@
             </template>
             <el-menu-item index="/user">用户信息</el-menu-item>
           </el-sub-menu>
+
+          <el-sub-menu index="3">
+          <template #title>
+            <el-icon><Reading /></el-icon>
+            <span>课程管理</span>
+          </template>
+          <el-menu-item index="/manager/course">
+        <el-icon><Document /></el-icon>
+        课程信息
+      </el-menu-item>
+      <el-menu-item index="/manager/course-appointment">
+        <el-icon><Calendar /></el-icon>
+        预约审核
+      </el-menu-item>
+        </el-sub-menu>
         </el-menu>
       </div>
       <div class="manager-main-right">
@@ -67,8 +82,11 @@
 </template>
 
 <script setup>
+import { Menu, HomeFilled, Reading, Document, Calendar } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
+
+
 
 const router = useRouter()
 
@@ -81,18 +99,16 @@ const handleCommand = async (command) => {
         {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
-          type: 'warning',
+          type: 'warning'
         }
       )
       
-      // 清除所有本地存储
+      // 清除登录信息
       localStorage.clear()
-      
-      // 使用 await 确保跳转完成
-      await router.push('/login')
+      // 退出后跳转到前端首页
+      await router.push('/front/home')
       ElMessage.success('退出成功')
     } catch (error) {
-      // 用户取消操作，不做处理
       console.log('用户取消退出:', error)
     }
   } else if (command === 'profile') {

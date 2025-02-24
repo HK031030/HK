@@ -98,35 +98,33 @@ const forgetUserForm = {}
 const captchaRef = ref(null)
 
 const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    ElMessage.error('用户名和密码不能为空')
-    return
-  }
-
-
-
-  // 验证验证码
-  if (!captchaRef.value) {
-    ElMessage.error('验证码组件加载失败')
-    return
-  }
-
-  const captchaText = captchaRef.value.captcha// 注意这里要访问 .value
-  const userInput = captchaRef.value.userInput // 注意这里要访问 .value
-
-  if (!userInput) {
-    ElMessage.error('请输入验证码')
-    return
-  }
-
-  if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
-    ElMessage.error('验证码错误，请重试')
-    captchaRef.value.generateCaptcha()
-    return
-  }
-
-  loading.value = true
   try {
+    if (!username.value || !password.value) {
+      ElMessage.error('用户名和密码不能为空')
+      return
+    }
+
+    // 验证验证码
+    if (!captchaRef.value) {
+      ElMessage.error('验证码组件加载失败')
+      return
+    }
+
+    const captchaText = captchaRef.value.captcha// 注意这里要访问 .value
+    const userInput = captchaRef.value.userInput // 注意这里要访问 .value
+
+    if (!userInput) {
+      ElMessage.error('请输入验证码')
+      return
+    }
+
+    if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
+      ElMessage.error('验证码错误，请重试')
+      captchaRef.value.generateCaptcha()
+      return
+    }
+
+    loading.value = true
     const res = await login({
       username: username.value,
       password: password.value,
@@ -143,7 +141,7 @@ const handleLogin = async () => {
       localStorage.setItem('token', token)
 
       console.log('存储的用户信息:', localStorage.getItem('userInfo'))
-       console.log('存储的token:', localStorage.getItem('token'))
+      console.log('存储的token:', localStorage.getItem('token'))
 
       ElMessage.success(res.msg || '登录成功')
       

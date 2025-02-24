@@ -1,14 +1,27 @@
 <template>
   <div>
-    <div>
-      <el-input style="width: 200px" placeholder="查询标题" v-model="title"></el-input>
-      <el-button type="primary" style="margin-left: 10px" @click="load(1)">查询</el-button>
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input 
+        v-model="title" 
+        placeholder="查询标题" 
+        style="width: 200px"
+        clearable
+      />
+      <el-button type="primary" @click="load(1)">查询</el-button>
       <el-button type="info" @click="reset">重置</el-button>
     </div>
-    <div style="margin: 10px 0">
-      <el-button type="primary" plain @click="handleAdd">新增</el-button>
-      <el-button type="danger" plain @click="delBatch">批量删除</el-button>
+
+    <!-- 操作按钮 -->
+    <div class="action-bar">
+      <el-button type="primary" @click="handleAdd">新增</el-button>
+      <el-button 
+        type="danger" 
+        @click="delBatch" 
+        :disabled="!ids.length"
+      >批量删除</el-button>
     </div>
+
     <el-table :data="tableData" stripe :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center"></el-table-column>
       <el-table-column prop="id" label="序号" width="70" align="center"></el-table-column>
@@ -39,7 +52,12 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="公告信息" :visible.sync="fromVisible" width="40%" :close-on-click-modal="false">
+    <el-dialog 
+      v-model="fromVisible"
+      title="公告信息" 
+      width="40%" 
+      :close-on-click-modal="false"
+    >
       <el-form :model="form" label-width="80px" style="padding-right: 20px" :rules="rules" ref="formRef">
         <el-form-item label="标题" prop="title">
           <el-input v-model="form.title" placeholder="标题"></el-input>
@@ -49,81 +67,98 @@
         </el-form-item>
       </el-form>
 
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="fromVisible = false">取 消</el-button>
-        <el-button type="primary" @click="save">确 定</el-button>
-      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="fromVisible = false">取 消</el-button>
+          <el-button type="primary" @click="save">确 定</el-button>
+        </div>
+      </template>
     </el-dialog>
-
   </div>
 </template>
 
 <script>
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { mockNoticeApi } from '@/mock/notice'
 
 export default {
   name: "Notice",
   data() {
     return {
-      tableData: [],  // 所有的数据
-      pageNum: 1,   // 当前的页码
-      pageSize: 5,  // 每页显示的个数
-      username: '',
+      tableData: [],
+      pageNum: 1,
+      pageSize: 5,
       title: '',
       total: 0,
       fromVisible: false,
       form: {},
-      user: JSON.parse(localStorage.getItem('honey-user') || '{}'),
       rules: {
         title: [
-          { required: true, message: '请输入标题', trigger: 'blur' },
+          { required: true, message: '请输入标题', trigger: 'blur' }
         ],
         content: [
-          { required: true, message: '请输入内容', trigger: 'blur' },
+          { required: true, message: '请输入内容', trigger: 'blur' }
         ]
       },
-      ids: [],
-      content: '',
+      ids: []
     }
   },
   created() {
     this.load()
   },
   methods: {
-    changeOpen(form) {
-      // 调用更新的接口  更新数据到数据库
-      this.form = JSON.parse(JSON.stringify(form))
-      this.sendSaveRequest()   // 直接发请求就可以了
+    // 修改公开状态
+    async changeOpen(row) {
+      try {
+        await mockNoticeApi.updateStatus(row.id, row.open)
+        ElMessage.success('状态更新成功')
+      } catch (error) {
+        row.open = !row.open // 还原状态
+        ElMessage.error('状态更新失败')
+      }
     },
-    delBatch() {
+
+    // 批量删除
+    async delBatch() {
       if (!this.ids.length) {
-        this.$message.warning('请选择数据')
+        ElMessage.warning('请选择要删除的数据')
         return
       }
-      this.$confirm('您确认批量删除这些数据吗？', '确认删除', {type: "warning"}).then(response => {
-        this.$request.delete('/notice/delete/batch', { data: this.ids }).then(res => {
-          if (res.code === '200') {   // 表示操作成功
-            this.$message.success('操作成功')
-            this.load(1)
-          } else {
-            this.$message.error(res.msg)  // 弹出错误的信息
-          }
+
+      try {
+        await ElMessageBox.confirm('确认删除选中的记录吗？', '提示', {
+          type: 'warning'
         })
-      }).catch(() => {})
+        const res = await mockNoticeApi.batchDeleteNotice(this.ids)
+        if (res.code === '200') {
+          ElMessage.success(res.msg)
+          this.load(1)
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('批量删除失败')
+        }
+      }
     },
+
     handleSelectionChange(rows) {   // 当前选中的所有的行数据
       this.ids = rows.map(v => v.id)
     },
-    del(id) {
-      this.$confirm('您确认删除吗？', '确认删除', {type: "warning"}).then(response => {
-        this.$request.delete('/notice/delete/' + id).then(res => {
-          if (res.code === '200') {   // 表示操作成功
-            this.$message.success('操作成功')
-            this.load(1)
-          } else {
-            this.$message.error(res.msg)  // 弹出错误的信息
-          }
+    async del(id) {
+      try {
+        await ElMessageBox.confirm('确认删除该条公告吗？', '提示', {
+          type: 'warning'
         })
-      }).catch(() => {})
+        const res = await mockNoticeApi.deleteNotice(id)
+        if (res.code === '200') {
+          ElMessage.success(res.msg)
+          this.load(1)
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('删除失败')
+        }
+      }
     },
     handleEdit(row) {   // 编辑数据
       this.form = JSON.parse(JSON.stringify(row))  // 给form对象赋值  注意要深拷贝数据
@@ -133,44 +168,40 @@ export default {
       this.form = {}  // 新增数据的时候清空数据
       this.fromVisible = true   // 打开弹窗
     },
-    save() {   // 保存按钮触发的逻辑  它会触发新增或者更新
-      this.$refs.formRef.validate((valid) => {
-        if (valid) {
-          this.sendSaveRequest()
-        }
-      })
-    },
-    sendSaveRequest() {
-      this.$request({
-        url: this.form.id ? '/notice/update': '/notice/add',
-        method: this.form.id ? 'PUT' : 'POST',
-        data: this.form
-      }).then(res => {
-        if (res.code === '200') {  // 表示成功保存
-          this.$message.success('保存成功')
+    async save() {   // 保存按钮触发的逻辑  它会触发新增或者更新
+      try {
+        await this.$refs.formRef.validate()
+        const api = this.form.id ? mockNoticeApi.updateNotice : mockNoticeApi.addNotice
+        const res = await api(this.form)
+        
+        if (res.code === '200') {
+          ElMessage.success(res.msg)
           this.load(1)
           this.fromVisible = false
-        } else {
-          this.$message.error(res.msg)  // 弹出错误的信息
         }
-      })
+      } catch (error) {
+        ElMessage.error('操作失败')
+      }
     },
     reset() {
       this.title = ''
       this.load()
     },
-    load(pageNum) {  // 分页查询
+    async load(pageNum) {  // 分页查询
       if (pageNum)  this.pageNum = pageNum
-      this.$request.get('/notice/selectByPage', {
-        params: {
+      try {
+        const res = await mockNoticeApi.getNoticeList({
           pageNum: this.pageNum,
           pageSize: this.pageSize,
           title: this.title
+        })
+        if (res.code === '200') {
+          this.tableData = res.data.records
+          this.total = res.data.total
         }
-      }).then(res => {
-        this.tableData = res.data.records
-        this.total = res.data.total
-      })
+      } catch (error) {
+        ElMessage.error('获取数据失败')
+      }
     },
     handleCurrentChange(pageNum) {
       this.load(pageNum)
@@ -179,6 +210,22 @@ export default {
 }
 </script>
 
-<style>
-.el-tooltip__popper{ max-width:300px !important; }
+<style lang="scss" scoped>
+.search-bar {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-bar {
+  margin: 10px 0;
+}
+
+:deep(.el-table) {
+  margin: 20px 0;
+}
+
+:deep(.el-dialog__body) {
+  padding-top: 20px;
+}
 </style>
