@@ -108,6 +108,28 @@
         <el-button type="primary" @click="submitAudit">确定</el-button>
       </template>
     </el-dialog>
+    <!-- 详情对话框 -->
+  <el-dialog
+    v-model="detailDialogVisible"
+    title="预约详情"
+    width="500px"
+  >
+    <el-descriptions :column="1" border>
+      <el-descriptions-item label="用户名">{{ detailForm.username }}</el-descriptions-item>
+      <el-descriptions-item label="课程名称">{{ detailForm.courseName }}</el-descriptions-item>
+      <el-descriptions-item label="课程类型">{{ detailForm.courseType }}</el-descriptions-item>
+      <el-descriptions-item label="预约时间">{{ detailForm.appointmentTime }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ detailForm.status }}</el-descriptions-item>
+      <el-descriptions-item label="备注">{{ detailForm.remark || '无' }}</el-descriptions-item>
+      <el-descriptions-item label="申请时间">{{ detailForm.createTime }}</el-descriptions-item>
+      <el-descriptions-item label="教练">
+        {{ detailForm.coachName || '未分配' }}
+      </el-descriptions-item>
+    </el-descriptions>
+    <template #footer>
+      <el-button @click="detailDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
   </div>
 </template>
 
@@ -124,6 +146,29 @@ const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 用户信息和角色
+const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
+const role = ref(userInfo.value.role || '');
+
+// 权限检查函数
+const hasPermission = (permission) => {
+  const permissions = {
+    'ADMIN': ['course-appointment', 'course-appointment-audit'],
+    'COACH': ['course-appointment', 'course-appointment-audit'],
+    'USER': [] // USER 无权访问此页面
+  };
+  return permissions[role.value]?.includes(permission) || false;
+};
+
+// 检查是否可以审核预约（COACH 只能审核自己课程的预约）
+const canAuditAppointment = (row) => {
+  if (role.value === 'ADMIN') return true;
+  if (role.value === 'COACH') {
+    // 假设后端返回的 appointment 数据中包含 courseId 和 coachId
+    return row.coachId === userInfo.value.id;
+  }
+  return false;
+};
 // 搜索表单
 const searchForm = reactive({
   username: '',
@@ -132,15 +177,19 @@ const searchForm = reactive({
   dateRange: []
 })
 
-// 对话框相关
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const formRef = ref(null)
-const form = reactive({
+// 详情对话框相关
+const detailDialogVisible = ref(false);
+const detailForm = reactive({
   id: '',
+  username: '',
+  courseName: '',
+  courseType: '',
+  appointmentTime: '',
   status: '',
-  remark: ''
-})
+  remark: '',
+  createTime: '',
+  coachName: '' // 假设后端返回教练名称
+});
 
 // 获取状态标签类型
 const getStatusType = (status) => {
@@ -166,9 +215,15 @@ const loadAppointments = async () => {
       startDate,
       endDate
     })
+    if (role.value === 'COACH') {
+      params.coachId = userInfo.value.id; // COACH 只能看到自己课程的预约
+    }
     if (res.code === '200') {
       appointments.value = res.data.records
       total.value = res.data.total
+    }
+    else {
+      ElMessage.error(res.msg || '加载预约列表失败');
     }
   } catch (error) {
     console.error('加载失败:', error)
@@ -198,6 +253,10 @@ const handleApprove = (row) => {
 
 // 处理审核拒绝
 const handleReject = (row) => {
+  if (!canAuditAppointment(row)) {
+    ElMessage.warning('您无权审核此预约');
+    return;
+  }
   form.id = row.id
   form.status = '已拒绝'
   form.remark = ''
@@ -217,16 +276,30 @@ const submitAudit = async () => {
       dialogVisible.value = false
       loadAppointments()
     }
+    else {
+      ElMessage.error(res.msg || '审核失败');
+    }
   } catch (error) {
     console.error('审核失败:', error)
     ElMessage.error('审核失败')
   }
 }
 
-// 查看详情
+// 查看详情（弹窗实现）
 const handleDetail = (row) => {
-  // 实现详情查看逻辑
-}
+  Object.assign(detailForm, {
+    id: row.id,
+    username: row.username,
+    courseName: row.courseName,
+    courseType: row.courseType,
+    appointmentTime: row.appointmentTime,
+    status: row.status,
+    remark: row.remark,
+    createTime: row.createTime,
+    coachName: row.coachName || '未分配' // 需要后端返回
+  });
+  detailDialogVisible.value = true;
+};
 
 // 分页处理
 const handleSizeChange = (val) => {
@@ -240,6 +313,11 @@ const handleCurrentChange = (val) => {
 }
 
 onMounted(() => {
+  // 如果 USER 访问此页面，直接提示无权限（主菜单已限制，这里为额外防护）
+  if (role.value === 'USER') {
+    ElMessage.error('您无权访问此页面');
+    return;
+  }
   loadAppointments()
 })
 </script>
