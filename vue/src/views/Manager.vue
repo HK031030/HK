@@ -15,81 +15,135 @@
         <el-dropdown style="cursor: pointer" @command="handleCommand">
           <div style="padding-right: 20px; display: flex; align-items: center">
             <img style="width: 40px; height: 40px; border-radius: 50%;" src="../assets/imgs/avatar.png" alt="">
-            <span style="margin-left: 5px; color: white">管理员</span>
+            <span style="margin-left: 5px; color: white">{{ userInfo.username || '管理员' }}</span>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile" >个人资料</el-dropdown-item>
-              <el-dropdown-item command="password" >修改密码</el-dropdown-item>
+              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
+              <el-dropdown-item command="password">修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </div>
     </div>
-    <!-- 下面部分开始 -->
 
     <div style="display: flex">
       <div class="manager-main-left">
-        <el-menu :default-active="router.currentRoute.value.path"
-                 :default-openeds="['1', '2','3']"
-                 router
+        <el-menu 
+          :default-active="router.currentRoute.value.path"
+          :default-openeds="defaultOpeneds"
+          router
+          @select="handleMenuSelect"
         >
-          <el-menu-item index="/manager/home">
+          <!-- 系统首页 -->
+          <el-menu-item v-if="hasPermission('system-home')" index="/manager/home">
             <el-icon><HomeFilled /></el-icon>
             <span>系统首页</span>
           </el-menu-item>
-          <el-sub-menu index="1">
+
+          <!-- 信息管理 -->
+          <el-sub-menu v-if="hasPermission('info-manage')" index="1">
             <template #title>
               <el-icon><Menu /></el-icon>
               <span>信息管理</span>
             </template>
-            <el-menu-item index="/notice">新闻信息</el-menu-item>
-            <el-menu-item index="/manager/notice">系统公告</el-menu-item>
+            <el-menu-item v-if="hasPermission('news')" index="/manager/news">新闻信息</el-menu-item>
+            <el-menu-item v-if="hasPermission('notice')" index="/manager/notice">系统公告</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="2">
+
+          <!-- 用户管理 -->
+          <el-sub-menu v-if="hasPermission('user-manage')" index="2">
             <template #title>
               <el-icon><Menu /></el-icon>
               <span>用户管理</span>
             </template>
-            <el-menu-item index="/user">用户信息</el-menu-item>
+            <el-menu-item v-if="hasPermission('user-info')" index="/manager/user">用户信息</el-menu-item>
           </el-sub-menu>
 
-          <el-sub-menu index="3">
-          <template #title>
-            <el-icon><Reading /></el-icon>
-            <span>课程管理</span>
-          </template>
-          <el-menu-item index="/manager/course">
-        <el-icon><Document /></el-icon>
-        课程信息
-      </el-menu-item>
-      <el-menu-item index="/manager/course-appointment">
-        <el-icon><Calendar /></el-icon>
-        预约审核
-      </el-menu-item>
-        </el-sub-menu>
+          <!-- 课程管理 -->
+          <el-sub-menu v-if="hasPermission('course-manage')" index="3">
+            <template #title>
+              <el-icon><Reading /></el-icon>
+              <span>课程管理</span>
+            </template>
+            <el-menu-item v-if="hasPermission('course-info')" index="/manager/course">
+              <el-icon><Document /></el-icon>
+              <span>课程信息</span>
+              <span v-if="hasPermission('course-info-edit')" style="margin-left: 10px; color: blue"></span>
+            </el-menu-item>
+            <el-menu-item v-if="hasPermission('course-appointment')" index="/manager/course-appointment">
+              <el-icon><Calendar /></el-icon>
+              <span>预约审核</span>
+              <span v-if="hasPermission('course-appointment-audit')" style="margin-left: 10px; color: green"></span>
+            </el-menu-item>
+          </el-sub-menu>
         </el-menu>
       </div>
+
       <div class="manager-main-right">
         <RouterView @update:user="updateUser" />
       </div>
     </div>
-    <!-- 下面部分结束 -->
-
-
   </div>
 </template>
 
 <script setup>
-import { Menu, HomeFilled, Reading, Document, Calendar } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessageBox, ElMessage } from 'element-plus';
+import { Menu, HomeFilled, Reading, Document, Calendar } from '@element-plus/icons-vue';
 
+const router = useRouter();
+const defaultOpeneds = ref(['1', '2', '3']);  // 默认展开的菜单项
 
+// 获取用户信息
+const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
+const role = ref(userInfo.value.role || '');  // 当前角色
 
-const router = useRouter()
+// 权限配置
+const permissions = {
+  'ADMIN': [
+    'system-home',
+    'info-manage', 'news', 'notice',
+    'user-manage', 'user-info',
+    'course-manage',           // 访问课程管理模块
+    'course-info',            // 查看课程信息
+    'course-info-edit',       // 编辑课程信息（增删改）
+    'course-appointment',     // 查看预约记录
+    'course-appointment-audit' // 审核和取消预约
+  ],
+  'COACH': [
+    'system-home',
+    'info-manage', 'news', 'notice',
+    'course-manage',           // 访问课程管理模块
+    'course-info',            // 查看自己负责的课程信息
+    'course-info-edit',       // 编辑自己负责的课程（可选）
+    'course-appointment',     // 查看自己课程的预约
+    'course-appointment-audit' // 审核自己课程的预约
+  ],
+  'USER': [
+    'system-home',
+    'info-manage', 'news', 'notice',
+    'course-manage',           // 访问课程管理模块
+    'course-info'             // 查看所有课程信息（只读）
+  ]
+};
 
+// 权限检查函数
+const hasPermission = (permission) => {
+  console.log('用户角色:', role.value);  // 输出当前角色
+  console.log('当前权限列表:', permissions[role.value]);
+  console.log('正在检查权限:', permission);
+  return permissions[role.value]?.includes(permission) || false;
+};
+
+// 菜单选择事件
+const handleMenuSelect = (index) => {
+  console.log('Menu selected:', index);
+};
+
+// 下拉菜单命令处理
 const handleCommand = async (command) => {
   if (command === 'logout') {
     try {
@@ -101,28 +155,32 @@ const handleCommand = async (command) => {
           cancelButtonText: '取消',
           type: 'warning'
         }
-      )
-      
-      // 清除登录信息
-      localStorage.clear()
-      // 退出后跳转到前端首页
-      await router.push('/front/home')
-      ElMessage.success('退出成功')
+      );
+      localStorage.clear();
+      await router.push('/front/home');
+      ElMessage.success('退出成功');
     } catch (error) {
-      console.log('用户取消退出:', error)
+      console.log('用户取消退出:', error);
     }
   } else if (command === 'profile') {
-    router.push('/manager/person')
+    router.push('/manager/person');
   } else if (command === 'password') {
-    router.push('/manager/password')
+    router.push('/manager/password');
   }
-}
+};
 
+// 更新用户信息
 const updateUser = (user) => {
-  // 获取子组件传递过来的数据，更新当前页面的数据
-  localStorage.setItem('userInfo', JSON.stringify(user))
-}
+  localStorage.setItem('userInfo', JSON.stringify(user));
+  userInfo.value = user;
+  role.value = user.role || '';
+};
 
+// 调试日志
+onMounted(() => {
+  console.log('权限配置:', permissions);
+  
+});
 </script>
 
 <style scoped>

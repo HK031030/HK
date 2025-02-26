@@ -2,10 +2,9 @@
   <div>
     <div>
       <el-input style="width: 200px" placeholder="查询用户名" v-model="username"></el-input>
-      <el-input style="width: 200px; margin: 0 5px"   placeholder="查询姓名" v-model="name"></el-input>
+      <el-input style="width: 200px; margin: 0 5px" placeholder="查询姓名" v-model="name"></el-input>
       <el-button type="primary" @click="load(1)">查询</el-button>
       <el-button type="info" @click="reset">重置</el-button>
-
     </div>
     <div style="margin: 10px 0">
       <el-button type="primary" plain @click="handleAdd">新增</el-button>
@@ -18,8 +17,7 @@
       <el-table-column prop="name" label="姓名"></el-table-column>
       <el-table-column prop="phone" label="手机号"></el-table-column>
       <el-table-column prop="email" label="邮箱"></el-table-column>
-      <el-table-column prop="address" label="地址"></el-table-column>
-      <el-table-column label="头像">
+      <el-table-column prop="avatar" label="头像">
         <template v-slot="scope">
           <div style="display: flex; align-items: center">
             <el-image style="width: 50px; height: 50px; border-radius: 50%" v-if="scope.row.avatar" :src="scope.row.avatar" :preview-src-list="[scope.row.avatar]"></el-image>
@@ -39,14 +37,13 @@
       <el-pagination
           @current-change="handleCurrentChange"
           :current-page="pageNum"
-          :page-sizes="[100, 200, 300, 400]"
           :page-size="pageSize"
-          layout="total,prev, pager, next"
+          layout="total, prev, pager, next"
           :total="total">
       </el-pagination>
     </div>
 
-    <el-dialog title="收货地址" :visible.sync="formVisible" width="30%">
+    <el-dialog title="用户信息" :visible.sync="formVisible" width="30%">
       <el-form :model="form" label-width="80px" style="padding-right: 20px" :rules="rules" ref="formRef">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="用户名"></el-input>
@@ -70,15 +67,15 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="头像">
-            <el-upload
-                class="avatar-uploader"
-                action="https://localhost:9090/file/upload"
-                :headers="{ token: user.token }"
-                :file-list="form.avatar ? [form.avatar] : []"
-                list-type="picture"
-                :on-success="handleAvatarSuccess">
-              <el-butto type="primary">上传头像</el-butto>
-            </el-upload>
+          <el-upload
+              class="avatar-uploader"
+              action="https://localhost:9090/file/upload"
+              :headers="{ token: user.token }"
+              :file-list="form.avatar ? [form.avatar] : []"
+              list-type="picture"
+              :on-success="handleAvatarSuccess">
+            <el-button type="primary">上传头像</el-button>
+          </el-upload>
         </el-form-item>
       </el-form>
 
@@ -87,18 +84,19 @@
         <el-button type="primary" @click="save">确 定</el-button>
       </div>
     </el-dialog>
-
   </div>
 </template>
 
 <script>
+import * as userApi from '@/api/user1'; // 确保路径正确
+
 export default {
   name: "User",
   data() {
     return {
-      tableData: [],  //所有的数据
-      pageNum: 1,  //当前的页码
-      pageSize: 5,  //每页显示的个数
+      tableData: [],
+      pageNum: 1,
+      pageSize: 5,
       username: '',
       name: '',
       total: 0,
@@ -107,105 +105,120 @@ export default {
       user: JSON.parse(localStorage.getItem('honey-user') || '{}'),
       rules: {
         username: [
-          { required: true, message: '请输入用户名', trigger: 'blur'}
+          { required: true, message: '请输入用户名', trigger: 'blur' }
         ]
       },
       ids: []
     }
   },
   created() {
-    this.load()
+    this.load(); // 加载分页数据
+    this.loadAllUsers(); // 加载所有用户数据
   },
   methods: {
-    delBatch() {
-      if(!this.ids.length) {
-        this.$message.warning('请选择数据')
-        return
-      }
-      this.$confirm('您确认批量删除这些数据吗?', '确认删除', {type: "warning"}).then(response => {
-        this.$request.del('/user/delete/batch', {data: this.ids}).then(res => {
-          if (res.code === '200') {  //表示成功
-            this.$message.success('操作成功')
-            this.load(1)
-          }else{
-            this.$message.error(res.msg)  //弹出错误信息
-          }
-        })
-      }).catch(() => {})
+    loadAllUsers() {
+      userApi.selectAll().then(res => {
+        console.log('API 响应:', res); // 打印响应
+        if (res.code === '200') {
+          // 处理所有用户数据
+          console.log('所有用户数据:', res.data);
+        } else {
+          this.$message.error(res.msg);
+        }
+      }).catch(error => {
+        console.error('加载所有用户失败:', error);
+        this.$message.error('加载所有用户失败');
+      });
     },
-    handleSelectionChange(rows) {  //当前选中的所有行数据
-      this.ids = row.map(v => v.id)
+    delBatch() {
+      if (!this.ids.length) {
+        this.$message.warning('请选择数据');
+        return;
+      }
+      this.$confirm('您确认批量删除这些数据吗?', '确认删除', { type: "warning" }).then(() => {
+        userApi.deleteBatch(this.ids).then(res => {
+          if (res.code === '200') {
+            this.$message.success('操作成功');
+            this.load(1);
+          } else {
+            this.$message.error(res.msg);
+          }
+        });
+      }).catch(() => {});
+    },
+    handleSelectionChange(rows) {
+      this.ids = rows.map(v => v.id);
     },
     del(id) {
-      this.$confirm('您确认删除吗?', '确认删除', {type: "warning"}).then(response => {
-        this.$request.del('/user/delete' + id).then(res => {
-          if (res.code === '200') {  //表示成功
-            this.$message.success('操作成功')
-            this.load(1)
-          }else{
-            this.$message.error(res.msg)  //弹出错误信息
+      this.$confirm('您确认删除吗?', '确认删除', { type: "warning" }).then(() => {
+        userApi.deleteUser(id).then(res => {
+          if (res.code === '200') {
+            this.$message.success('操作成功');
+            this.load(1);
+          } else {
+            this.$message.error(res.msg);
           }
-        })
-      }).catch(() => {})
+        });
+      }).catch(() => {});
     },
-    handleEdit(row) {  //编辑数据
-      this.form = JSON.parse(JSON.stringify(row))  //给form对象赋值   注意要深拷贝数据
-      this.formVisible = true  //打开弹窗
+    handleEdit(row) {
+      this.form = JSON.parse(JSON.stringify(row));
+      this.formVisible = true;
     },
-    handleAdd() {  //新增数据
-      this.form = { role: '用户' }  //新增数据的时候清空数据
-      this.formVisible = true  //打开弹窗
+    handleAdd() {
+      this.form = { role: '用户' };
+      this.formVisible = true;
     },
-    save() {    //保存按钮触发逻辑  他会触发新增或者更新
+    save() {
       this.$refs.formRef.validate((valid) => {
         if (valid) {
-          this.$request({
-            url: this.form.id ? '/user/update' : '/user/add',
-            method: this.form.id ? 'PUT' : 'POST',
-            data: this.form
-          }).then(res => {
-            if (res.code === '200') {  //表示成功保存
-              this.$message.success('保存成功')
-              this.load(1)
-              this.formVisible = false
+          userApi[this.form.id ? 'updateUser' : 'addUser'](this.form).then(res => {
+            if (res.code === '200') {
+              this.$message.success('保存成功');
+              this.load(1);
+              this.formVisible = false;
             } else {
-              this.$message.error(res.msg)  //弹出错误信息
+              this.$message.error(res.msg);
             }
-          })
+          });
         }
-      })
+      });
     },
     reset() {
-      this.name = ''
-      this.username = ''
-      this.load()
+      this.name = '';
+      this.username = '';
+      this.load();
     },
-    load(pageNum) {    //分页查询
-      if (pageNum) this.pageNum = pageNum
-      this.$request.get('user/selectByPage', {
-        params: {
-          pageNum: this.pageNum,
-          pageSize: this.pageSize,
-          username: this.username,
-          name: this.name,
-        }
+    load(pageNum) {
+      if (pageNum) this.pageNum = pageNum;
+      userApi.selectPage({
+        pageNum: this.pageNum,
+        pageSize: this.pageSize,
+        username: this.username,
+        name: this.name,
       }).then(res => {
-        this.tableData = res.data.records
-        this.total = res.data.total
-      })
+        if (res.code === '200') {
+          this.tableData = res.data.records;
+          console.log('加载的数据:', this.tableData); // 打印加载的数据
+          this.total = res.data.total;
+        } else {
+          this.$message.error(res.msg);
+        }
+      }).catch(error => {
+        console.error('加载用户失败:', error);
+        this.$message.error('加载用户失败');
+      });
     },
     handleCurrentChange(pageNum) {
-      this.load(pageNum)
+      this.load(pageNum);
     },
-    handleAvatarSuccess(response , file, filelist) {
-      console.log(response)
-      //把user的头像属性换成上传的图片的链接
-      this.form.avatar = response.data
+    handleAvatarSuccess(response, file, filelist) {
+      this.form.avatar = response.data; // 更新头像链接
     }
   }
 }
 </script>
 
 <style scoped>
-
+/* 添加样式 */
 </style>

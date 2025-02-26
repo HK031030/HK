@@ -20,23 +20,32 @@
         <el-option label="已结束" value="已结束" />
       </el-select>
       <el-button type="primary" :icon="Search" @click="loadCourses">搜索</el-button>
-      <el-button type="success" :icon="Plus" @click="handleAdd">新增课程</el-button>
+      <!-- 仅 ADMIN 和 COACH 有新增权限，且 COACH 可选 -->
+      <el-button
+        v-if="hasPermission('course-info-edit')"
+        type="success"
+        :icon="Plus"
+        @click="handleAdd"
+      >
+        新增课程
+      </el-button>
     </div>
 
     <!-- 课程表格 -->
     <el-table :data="courses" v-loading="loading" border stripe>
       <el-table-column type="index" label="序号" width="60" align="center" />
-      <el-table-column prop="name" label="课程介绍" min-width="200" show-overflow-tooltip />
+      <el-table-column prop="name" label="课程名称" min-width="150" show-overflow-tooltip />
+      <el-table-column prop="descr" label="课程介绍" min-width="200" show-overflow-tooltip />
       <el-table-column prop="type" label="课程类型" width="100" />
-      <el-table-column prop="duration" label="课程时长" width="100">
+      <el-table-column prop="during" label="课程时长" width="100">
         <template #default="{ row }">
-          {{ row.duration }}课时
+          {{ row.during }}课时
         </template>
       </el-table-column>
-      <el-table-column prop="startTime" label="上课时间" width="180" />
+      <el-table-column prop="time" label="上课时间" width="180" />
       <el-table-column prop="location" label="上课地点" width="150" show-overflow-tooltip />
-      <el-table-column prop="coach" label="教练" width="100" />
-      <el-table-column prop="maxStudents" label="最大人数" width="100" align="center" />
+      <el-table-column prop="coachName" label="教练" width="100" />
+      <el-table-column prop="max" label="最大人数" width="100" align="center" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
@@ -44,8 +53,22 @@
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" :icon="Edit" circle @click="handleEdit(row)" />
-          <el-button type="danger" :icon="Delete" circle @click="handleDelete(row)" />
+          <!-- 编辑按钮：ADMIN 或 COACH 且是自己负责的课程 -->
+          <el-button
+            type="primary"
+            :icon="Edit"
+            circle
+            @click="handleEdit(row)"
+            v-if="canEditCourse(row)"
+          />
+          <!-- 删除按钮：仅 ADMIN 有权限 -->
+          <el-button
+            type="danger"
+            :icon="Delete"
+            circle
+            @click="handleDelete(row)"
+            v-if="role === 'ADMIN'"
+          />
         </template>
       </el-table-column>
     </el-table>
@@ -70,8 +93,11 @@
       width="600px"
     >
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="课程介绍" prop="name">
-          <el-input v-model="form.name" type="textarea" :rows="2" />
+        <el-form-item label="课程名称" prop="name">
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="课程介绍" prop="descr">
+          <el-input v-model="form.descr" type="textarea" :rows="2" />
         </el-form-item>
         <el-form-item label="课程类型" prop="type">
           <el-select v-model="form.type" style="width: 100%">
@@ -81,13 +107,13 @@
             <el-option label="科目四" value="科目四" />
           </el-select>
         </el-form-item>
-        <el-form-item label="课程时长" prop="duration">
-          <el-input-number v-model="form.duration" :min="1" />
+        <el-form-item label="课程时长" prop="during">
+          <el-input-number v-model="form.during" :min="1" />
           <span class="unit">课时</span>
         </el-form-item>
-        <el-form-item label="上课时间" prop="startTime">
+        <el-form-item label="上课时间" prop="time">
           <el-date-picker
-            v-model="form.startTime"
+            v-model="form.time"
             type="datetime"
             style="width: 100%"
             value-format="YYYY-MM-DD HH:mm:ss"
@@ -96,11 +122,18 @@
         <el-form-item label="上课地点" prop="location">
           <el-input v-model="form.location" />
         </el-form-item>
-        <el-form-item label="教练" prop="coach">
-          <el-input v-model="form.coach" />
-        </el-form-item>
-        <el-form-item label="最大人数" prop="maxStudents">
-          <el-input-number v-model="form.maxStudents" :min="1" :max="100" />
+        <el-form-item label="教练" prop="coachId">
+  <el-select v-model="form.coachId" style="width: 100%" placeholder="请选择教练">
+    <el-option
+      v-for="coach in coachList"
+      :key="coach.id"
+      :label="coach.name"
+      :value="coach.id"
+    />
+  </el-select>
+</el-form-item>
+        <el-form-item label="最大人数" prop="max">
+          <el-input-number v-model="form.max" :min="1" :max="100" />
         </el-form-item>
         <el-form-item label="课程状态" prop="status">
           <el-select v-model="form.status" style="width: 100%">
@@ -123,11 +156,17 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import * as courseApi from '@/api/course'
-import { mockCourseApi } from '@/mock/course'
-
-// 根据环境选择 API
-const api = process.env.NODE_ENV === 'development' ? mockCourseApi : courseApi
+import { Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import request from '@/utils/request';
+// 导入所需的 API 函数
+import { 
+  getCourseList, 
+  addCourse, 
+  updateCourse, 
+  deleteCourse, 
+  getCourseDetail,
+  deleteBatch 
+} from '@/api/course'
 
 // 数据列表相关
 const courses = ref([])
@@ -135,10 +174,87 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const coachList = ref([]);
 
+// 用户信息和角色
+const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
+const role = ref(userInfo.value.role || '');
+
+// 权限检查函数
+const hasPermission = (permission) => {
+  const permissions = {
+    'ADMIN': ['course-info', 'course-info-edit'],
+    'COACH': ['course-info', 'course-info-edit'],
+    'USER': ['course-info']
+  };
+  return permissions[role.value]?.includes(permission) || false;
+};
+
+// 检查是否可以编辑课程（COACH 只能编辑自己负责的课程）
+const canEditCourse = (row) => {
+  if (role.value === 'ADMIN') return true;
+  if (role.value === 'COACH') return row.coachId === userInfo.value.id;
+  return false;
+};
+
+// 格式化时间
+const formatTime = (time) => {
+  const date = new Date(time);
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+// 加载教练列表
+const loadCoaches = async () => {
+  try {
+    const res = await request({
+      url: '/coach/selectAll', // 假设后端提供此接口
+      method: 'get'
+    });
+    if (res.code === '200') {
+      coachList.value = res.data || [];
+    } else {
+      ElMessage.error('加载教练列表失败');
+    }
+  } catch (error) {
+    console.error('加载教练失败:', error);
+    ElMessage.error('加载教练失败');
+  }
+};
+const loadCourses = async () => {
+  loading.value = true;
+  try {
+    const params = {
+      pageNum: page.value,
+      pageSize: pageSize.value,
+      name: searchForm.name,
+      type: searchForm.type,
+      status: searchForm.status
+    };
+    if (role.value === 'COACH') {
+      params.coachId = userInfo.value.id; // COACH 只能看到自己的课程
+    }
+    const res = await getCourseList(params);
+    if (res.code === '200') {
+      courses.value = res.data.list || [];
+      total.value = res.data.total || 0;
+    } else {
+      ElMessage.error(res.msg || '加载课程列表失败');
+    }
+  } catch (error) {
+    ElMessage.error('加载课程列表失败');
+  } finally {
+    loading.value = false;
+  }
+};
+// 在 onMounted 中加载
+onMounted(() => {
+  loadCourses();
+  loadCoaches();
+});
 // 搜索表单
 const searchForm = reactive({
-  name: '',
+  name: '', 
   type: '',
   status: ''
 })
@@ -147,30 +263,32 @@ const searchForm = reactive({
 const dialogVisible = ref(false)
 const formRef = ref(null)
 const submitting = ref(false)
+// 修改表单数据结构
 const form = reactive({
   id: '',
   name: '',
+  descr: '',
   type: '',
-  duration: 1,
-  startTime: '',
+  during: 1,         // 已为整数，保持不变
+  time: '',
   location: '',
-  coach: '',
-  maxStudents: 20,
+  coachId: null,        // 改为 coachId，默认值为 0（整数）
+  max: 20,           // 已为整数，保持不变
   status: '未开始'
 })
 
-// 表单验证规则
+// 修改验证规则
 const rules = {
-  name: [{ required: true, message: '请输入课程介绍', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],  // 添加 name 验证
+  descr: [{ required: true, message: '请输入课程介绍', trigger: 'blur' }],
   type: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
-  duration: [{ required: true, message: '请输入课程时长', trigger: 'blur' }],
-  startTime: [{ required: true, message: '请选择上课时间', trigger: 'change' }],
+  during: [{ required: true, message: '请输入课程时长', trigger: 'blur' }],
+  time: [{ required: true, message: '请选择上课时间', trigger: 'change' }],
   location: [{ required: true, message: '请输入上课地点', trigger: 'blur' }],
-  coach: [{ required: true, message: '请输入教练姓名', trigger: 'blur' }],
-  maxStudents: [{ required: true, message: '请输入最大人数', trigger: 'blur' }],
+  coachId: [{ required: true, message: '请选择教练', trigger: 'change' }],
+  max: [{ required: true, message: '请输入最大人数', trigger: 'blur' }],
   status: [{ required: true, message: '请选择课程状态', trigger: 'change' }]
 }
-
 // 获取状态标签类型
 const getStatusType = (status) => {
   const map = {
@@ -181,80 +299,98 @@ const getStatusType = (status) => {
   return map[status]
 }
 
-// 加载课程列表
-const loadCourses = async () => {
-  loading.value = true
-  try {
-    const res = await api.getCourseList({
-      page: page.value,
-      pageSize: pageSize.value,
-      ...searchForm
-    })
-    courses.value = res.data.records
-    total.value = res.data.total
-  } catch (error) {
-    ElMessage.error('加载课程列表失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 // 处理新增
 const handleAdd = () => {
-  form.id = ''
-  form.name = ''
-  form.type = ''
-  form.duration = 1
-  form.startTime = ''
-  form.location = ''
-  form.coach = ''
-  form.maxStudents = 20
-  form.status = '未开始'
-  dialogVisible.value = true
-}
+  Object.assign(form, {
+    id: '',
+    name: '',
+    descr: '',
+    type: '',
+    during: 1,
+    time: '',
+    location: '',
+    coachId: role.value === 'COACH' ? userInfo.value.id : null, // COACH 默认选择自己
+    max: 20,
+    status: '未开始'
+  });
+  dialogVisible.value = true;
+};
 
 // 处理编辑
 const handleEdit = (row) => {
-  Object.assign(form, row)
-  dialogVisible.value = true
-}
-
+  if (!canEditCourse(row)) {
+    ElMessage.warning('您无权编辑此课程');
+    return;
+  }
+  Object.assign(form, {
+    id: row.id,
+    name: row.name,
+    descr: row.descr,
+    type: row.type,
+    during: row.during,
+    time: row.time,
+    location: row.location,
+    coachId: row.coachId,
+    max: row.max,
+    status: row.status
+  });
+  dialogVisible.value = true;
+};
 // 处理删除
 const handleDelete = async (row) => {
+  if (role.value !== 'ADMIN') {
+    ElMessage.warning('您无权删除课程');
+    return;
+  }
   try {
     await ElMessageBox.confirm('确认删除该课程吗？', '提示', {
       type: 'warning'
-    })
-    await api.deleteCourse(row.id)
-    ElMessage.success('删除成功')
-    loadCourses()
-  } catch (error) {
-    console.error('删除失败:', error)
-  }
-}
-
-// 提交表单
-const handleSubmit = async () => {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-    submitting.value = true
-    if (form.id) {
-      await api.updateCourse(form)
-      ElMessage.success('更新成功')
+    });
+    const res = await deleteCourse(row.id);
+    if (res.code === '200') {
+      ElMessage.success('删除成功');
+      loadCourses();
     } else {
-      await api.addCourse(form)
-      ElMessage.success('添加成功')
+      ElMessage.error(res.msg || '删除失败');
     }
-    dialogVisible.value = false
-    loadCourses()
   } catch (error) {
-    console.error('提交失败:', error)
-    ElMessage.error('操作失败')
-  } finally {
-    submitting.value = false
+    if (error !== 'cancel') ElMessage.error('删除失败');
   }
-}
+};
+
+// 处理提交
+const handleSubmit = async () => {
+  if (!formRef.value) return;
+  try {
+    await formRef.value.validate();
+    submitting.value = true;
+    const submitData = {
+      id: String(form.id),
+      name: form.name,
+      descr: form.descr,
+      type: form.type === "科目一" ? "1" : form.type === "科目二" ? "2" : form.type === "科目三" ? "3" : "4",
+      during: parseInt(form.during),
+      time: formatTime(form.time),
+      location: form.location,
+      coachId: parseInt(form.coachId),
+      max: parseInt(form.max),
+      status: form.status
+    };
+    const apiMethod = form.id ? updateCourse : addCourse;
+    const res = await apiMethod(submitData);
+    if (res.code === '200') {
+      ElMessage.success(form.id ? '更新成功' : '添加成功');
+      dialogVisible.value = false;
+      loadCourses();
+    } else {
+      ElMessage.error(res.msg || '操作失败');
+    }
+  } catch (error) {
+    ElMessage.error('操作失败');
+  } finally {
+    submitting.value = false;
+  }
+};
 
 // 分页处理
 const handleSizeChange = (val) => {

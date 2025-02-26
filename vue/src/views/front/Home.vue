@@ -91,6 +91,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 
+
 import banner1 from '@/assets/imgs/banner1.jpg'
 import banner2 from '@/assets/imgs/banner2.jpg'
 import banner3 from '@/assets/imgs/banner3.jpg'

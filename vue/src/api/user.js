@@ -1,21 +1,11 @@
 import request from '@/utils/request'
 
-// 模拟登录接口
 export function login(data) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        code: '200',
-        msg: '登录成功',
-        data: {
-          token: 'dev-token',
-          username: data.username,
-          role: 'ADMIN',
-          name: '管理员'
-        }
-      })
-    }, 500) // 模拟网络延迟
-  })
+    return request({
+        url: '/login',
+        method: 'post',
+        data
+    })
 }
 
 // 注册方法
@@ -38,4 +28,52 @@ export function verifyAndResetPassword(data) {
       role: data.role
     }
   })
+}
+export function getUserInfo() {
+  return request({
+    url: '/user/info',
+    method: 'get'
+  })
+}
+
+// 更新用户信息
+export function updateUserInfo(data) {
+  return request({
+    url: '/user/update',
+    method: 'post',
+    data
+  })
+}
+
+
+// 文件上传
+export function uploadFile(data) {
+  const formData = new FormData()
+  formData.append('file', data)
+
+  return request({
+    url: '/api/file/upload',
+    method: 'post',
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    data : formData
+  })
+}
+
+// 获取文件访问路径
+export function getFileUrl(filename) {
+  return `${import.meta.env.VITE_API_URL}/file/download/${filename}`
+}
+
+// 新增：更新密码接口
+export function updatePassword(data) {
+  return request({
+    url: '/updatePassword',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    data: data
+  });
 }

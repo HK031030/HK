@@ -79,7 +79,8 @@
 
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { mockNoticeApi } from '@/mock/notice'
+// import { mockNoticeApi } from '@/mock/notice'
+import { getNoticeList, addNotice, updateNotice, deleteNotice, batchDeleteNotice, updateStatus } from '@/api/notice';
 
 export default {
   name: "Notice",
@@ -110,11 +111,16 @@ export default {
     // 修改公开状态
     async changeOpen(row) {
       try {
-        await mockNoticeApi.updateStatus(row.id, row.open)
-        ElMessage.success('状态更新成功')
+        const res = await updateStatus(row.id, row.open);
+        if (res.code === '200') {
+          ElMessage.success('状态更新成功');
+        } else {
+          row.open = !row.open; // 还原状态
+          ElMessage.error(res.msg || '状态更新失败');
+        }
       } catch (error) {
-        row.open = !row.open // 还原状态
-        ElMessage.error('状态更新失败')
+        row.open = !row.open; // 还原状态
+        ElMessage.error('状态更新失败');
       }
     },
 
@@ -129,10 +135,12 @@ export default {
         await ElMessageBox.confirm('确认删除选中的记录吗？', '提示', {
           type: 'warning'
         })
-        const res = await mockNoticeApi.batchDeleteNotice(this.ids)
+        const res = await batchDeleteNotice(this.ids)
         if (res.code === '200') {
-          ElMessage.success(res.msg)
+          ElMessage.success(res.msg || '批量删除成功');
           this.load(1)
+        }else {
+          ElMessage.error(res.msg || '批量删除失败');
         }
       } catch (error) {
         if (error !== 'cancel') {
@@ -149,7 +157,7 @@ export default {
         await ElMessageBox.confirm('确认删除该条公告吗？', '提示', {
           type: 'warning'
         })
-        const res = await mockNoticeApi.deleteNotice(id)
+        const res = await deleteNotice(id)
         if (res.code === '200') {
           ElMessage.success(res.msg)
           this.load(1)
@@ -165,22 +173,28 @@ export default {
       this.fromVisible = true   // 打开弹窗
     },
     handleAdd() {   // 新增数据
-      this.form = {}  // 新增数据的时候清空数据
-      this.fromVisible = true   // 打开弹窗
+      this.form = { 
+        user: JSON.parse(localStorage.getItem('userInfo') || '{}').username || '未知用户', // 默认发布人为当前用户
+        time: new Date().toISOString().slice(0, 19).replace('T', ' '), // 当前时间
+        open: false // 默认不公开
+      };
+      this.fromVisible = true;
     },
     async save() {   // 保存按钮触发的逻辑  它会触发新增或者更新
       try {
-        await this.$refs.formRef.validate()
-        const api = this.form.id ? mockNoticeApi.updateNotice : mockNoticeApi.addNotice
-        const res = await api(this.form)
-        
+        await this.$refs.formRef.validate();
+        const api = this.form.id ? updateNotice : addNotice;
+        const res = await api(this.form);
+        console.log('Response from save:', res);
         if (res.code === '200') {
-          ElMessage.success(res.msg)
-          this.load(1)
-          this.fromVisible = false
+          ElMessage.success(res.msg || '操作成功');
+          this.load(1);
+          this.fromVisible = false;
+        } else {
+          ElMessage.error(res.msg || '操作失败');
         }
       } catch (error) {
-        ElMessage.error('操作失败')
+        ElMessage.error('操作失败');
       }
     },
     reset() {
@@ -188,19 +202,24 @@ export default {
       this.load()
     },
     async load(pageNum) {  // 分页查询
-      if (pageNum)  this.pageNum = pageNum
+      if (pageNum) this.pageNum = pageNum;
       try {
-        const res = await mockNoticeApi.getNoticeList({
+        const res = await getNoticeList({
           pageNum: this.pageNum,
           pageSize: this.pageSize,
           title: this.title
-        })
+        });
+        console.log('Response from getNoticeList:', res);
+
+
         if (res.code === '200') {
-          this.tableData = res.data.records
-          this.total = res.data.total
+          this.tableData = res.data.records || res.data.list || []; // 适配可能的字段差异
+          this.total = res.data.total || 0;
+        } else {
+          ElMessage.error(res.msg || '获取数据失败');
         }
       } catch (error) {
-        ElMessage.error('获取数据失败')
+        ElMessage.error('获取数据失败');
       }
     },
     handleCurrentChange(pageNum) {

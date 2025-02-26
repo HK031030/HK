@@ -9,11 +9,16 @@
       <el-form :model="user" label-width="80px" class="person-form">
         <div class="avatar-container">
           <el-upload
+              v-loading="uploading"
+              element-loading-text="上传中..."
               class="avatar-uploader"
-              action="http://192.168.43.63:8080/api/file/upload"
-              :headers="{ token }"
+              :action="uploadConfig.action"
+              :headers="uploadConfig.headers"
               :show-file-list="false"
-              :on-success="handleAvatarSuccess">
+              :on-success="handleAvatarSuccess"
+              :on-error="handleAvatarError"
+              :before-upload="beforeAvatarUpload"
+              accept="image/*">
             <img v-if="user.avatar" :src="user.avatar" class="avatar" />
             <el-icon v-else class="avatar-icon"><Plus /></el-icon>
           </el-upload>
@@ -62,14 +67,28 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Check } from '@element-plus/icons-vue'
-import request from '@/utils/request'
+import { updateUserInfo } from '@/api/user'  // 导入API方法
 
-const user = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
-const token = localStorage.getItem('token')
+const user = ref({
+  ...JSON.parse(localStorage.getItem('userInfo') || '{}'),
+  avatar: localStorage.getItem('userInfo') ? 
+    JSON.parse(localStorage.getItem('userInfo')).avatar : ''
+})
 
+// 修改上传配置
+const uploadConfig = {
+  action: `/api/file/upload`,  // 修改上传地址
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+}
+
+const uploading = ref(false)
+
+// 修改更新方法
 const update = async () => {
   try {
-    const res = await request.put('/api/user/update', user.value)
+    const res = await updateUserInfo(user.value)
     if (res.code === '200') {
       ElMessage.success('保存成功')
       localStorage.setItem('userInfo', JSON.stringify(user.value))
@@ -82,9 +101,58 @@ const update = async () => {
   }
 }
 
-const handleAvatarSuccess = (response) => {
-  console.log('上传响应:', response)
-  user.value.avatar = response.data
+const handleAvatarSuccess = async (response) => {
+  uploading.value = false
+  console.log('上传成功:', response)
+  if (response.code === '200') {
+    // 将 localhost 替换为实际的后端地址
+    const fileUrl = response.data.replace(
+      'http://192.168.43.63:8080',
+      import.meta.env.VITE_BASE_URL
+    )
+    user.value.avatar = fileUrl
+    ElMessage.success('头像上传成功')
+    
+    try {
+      // 更新用户信息
+      const updateRes = await updateUserInfo({
+        ...user.value,
+        avatar: fileUrl
+      })
+      if (updateRes.code === '200') {
+        localStorage.setItem('userInfo', JSON.stringify({
+          ...user.value,
+          avatar: fileUrl
+        }))
+      }
+    } catch (error) {
+      console.error('更新用户信息失败:', error)
+    }
+  } else {
+    ElMessage.error(response.msg || '上传失败')
+  }
+}
+
+const handleAvatarError = (error) => {
+  uploading.value = false
+  console.error('上传失败:', error)
+  ElMessage.error('头像上传失败，请重试')
+}
+
+const beforeAvatarUpload = (file) => {
+  uploading.value = true
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件！')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB！')
+    return false
+  }
+  return true
 }
 </script>
 
