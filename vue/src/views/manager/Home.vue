@@ -66,6 +66,9 @@
               <div class="notice-title">{{ notice.title }}</div>
               <div class="notice-time">{{ notice.createTime }}</div>
             </div>
+            <div class="market-analysis-entry" v-if="role === 'ADMIN'">
+            <el-button type="primary" @click="goToMarketAnalysis">市场调研分析</el-button>
+          </div>
           </div>
         </el-card>
       </el-col>
@@ -155,8 +158,13 @@ const fetchData = async () => {
 
 // 查看更多公告
 const moreNotice = () => {
-  router.push('/manager/announcement')
+  router.push('/manager/Notice')
 }
+
+// 跳转到市场调研分析页面
+const goToMarketAnalysis = () => {
+  window.location.href = '/market-analysis/index.html'; // 直接跳转到静态页面
+};
 
 onMounted(() => {
   fetchData()

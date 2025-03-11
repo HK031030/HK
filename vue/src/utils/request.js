@@ -14,6 +14,10 @@ request.interceptors.request.use(
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}` // JWT token格式
         }
+        // 如果是 POST 请求，默认使用 JSON 格式
+        if (config.method === 'post' && !config.headers['Content-Type']) {
+          config.headers['Content-Type'] = 'application/json';
+      }
         // 打印请求配置
         console.log('请求配置:', {
             url: config.url,
@@ -23,11 +27,6 @@ request.interceptors.request.use(
             headers: config.headers
         })
 
-        // 如果是 POST 请求，默认使用 JSON 格式
-        if (config.method === 'post' && !config.headers['Content-Type']) {
-            config.headers['Content-Type'] = 'application/json'
-        }
-
         return config
     },
     error => {
@@ -36,36 +35,22 @@ request.interceptors.request.use(
     }
 )
 
-request.interceptors.request.use(
-  config => {
-    // 打印请求配置
-    console.log('请求配置:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      data: config.data instanceof URLSearchParams ? 
-        Object.fromEntries(config.data.entries()) : config.data
-    })
-    
-    return config
-  },
-  error => {
-    console.error('请求错误:', error)
-    return Promise.reject(error)
-  }
-)
 
 request.interceptors.response.use(
   response => response.data,
   error => {
-    // 详细的错误日志
     console.error('响应错误:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    })
-    return Promise.reject(error)
-  }
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+    });
+    if (error.response?.status === 401) {
+        ElMessage.error('登录已过期，请重新登录');
+        localStorage.removeItem('token');
+        router.push('/login');
+    }
+    return Promise.reject(error);
+}
 )
 
 export default request;

@@ -346,28 +346,10 @@ onUnmounted(() => {
     font-size: 1.6rem;
     color: rgba(255, 255, 255, 0.9);
     position: relative;
-    /* 移除光标相关样式
-    &::after {
-      content: '|';
-      position: absolute;
-      right: -4px;
-      animation: blink 0.8s step-end infinite;
-      opacity: 0;
-    }
-    
-    &.is-visible::after {
-      opacity: 1;
-    }
-    */
+   
   }
 }
 
-/* 移除光标闪烁动画
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-*/
 
 /* 移除之前的彩色样式 */
 .line-wrapper {

@@ -14,16 +14,22 @@
 
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <el-button type="primary" @click="handleAdd">新增</el-button>
+      <el-button v-if="hasPermission('notice-add')" type="primary" @click="handleAdd">新增</el-button>
       <el-button 
+        v-if="hasPermission('notice-delete')"
         type="danger" 
         @click="delBatch" 
         :disabled="!ids.length"
       >批量删除</el-button>
     </div>
 
-    <el-table :data="tableData" stripe :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"></el-table-column>
+    <el-table 
+      :data="filteredTableData" 
+      stripe 
+      :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }" 
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column v-if="hasPermission('notice-delete')" type="selection" width="55" align="center"></el-table-column>
       <el-table-column prop="id" label="序号" width="70" align="center"></el-table-column>
       <el-table-column prop="title" label="标题"></el-table-column>
       <el-table-column prop="content" label="内容" show-overflow-tooltip></el-table-column>
@@ -31,25 +37,41 @@
       <el-table-column prop="time" label="发布时间"></el-table-column>
       <el-table-column label="是否公开">
         <template v-slot="scope">
-          <el-switch v-model="scope.row.open" @change="changeOpen(scope.row)"></el-switch>
+          <el-switch 
+            v-model="scope.row.open" 
+            @change="changeOpen(scope.row)"
+            :disabled="!hasPermission('notice-status')"
+          ></el-switch>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="180">
         <template v-slot="scope">
-          <el-button size="mini" type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="mini" type="danger" plain @click="del(scope.row.id)">删除</el-button>
+          <el-button 
+            v-if="hasPermission('notice-edit') && canEditNotice(scope.row)"
+            size="small" 
+            type="primary" 
+            plain 
+            @click="handleEdit(scope.row)"
+          >编辑</el-button>
+          <el-button 
+            v-if="hasPermission('notice-delete')"
+            size="small" 
+            type="danger" 
+            plain 
+            @click="del(scope.row.id)"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <div style="margin: 10px 0">
       <el-pagination
-          @current-change="handleCurrentChange"
-          :current-page="pageNum"
-          :page-size="pageSize"
-          layout="total, prev, pager, next"
-          :total="total">
-      </el-pagination>
+        @current-change="handleCurrentChange"
+        :current-page="pageNum"
+        :page-size="pageSize"
+        layout="total, prev, pager, next"
+        :total="total"
+      ></el-pagination>
     </div>
 
     <el-dialog 
@@ -78,8 +100,7 @@
 </template>
 
 <script>
-import { ElMessage, ElMessageBox } from 'element-plus'
-// import { mockNoticeApi } from '@/mock/notice'
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { getNoticeList, addNotice, updateNotice, deleteNotice, batchDeleteNotice, updateStatus } from '@/api/notice';
 
 export default {
@@ -102,18 +123,58 @@ export default {
         ]
       },
       ids: []
+    };
+  },
+  computed: {
+    userInfo() {
+      return JSON.parse(localStorage.getItem('userInfo') || '{}');
+    },
+    role() {
+      return this.userInfo.role || '';
+    },
+    // 过滤后的表格数据
+    filteredTableData() {
+      if (this.role === 'USER') {
+        // USER 只能看到公开的公告
+        return this.tableData.filter(item => item.open);
+      }
+      // ADMIN 和 COACH 可以看到所有公告
+      return this.tableData;
     }
   },
   created() {
-    this.load()
+    this.load();
   },
   methods: {
+    // 权限检查函数
+    hasPermission(permission) {
+      const permissions = {
+        'ADMIN': ['notice', 'notice-add', 'notice-edit', 'notice-delete', 'notice-status'],
+        'COACH': ['notice', 'notice-add', 'notice-edit'],
+        'USER': ['notice']
+      };
+      return permissions[this.role]?.includes(permission) || false;
+    },
+
+    // 检查是否可以编辑公告（COACH 只能编辑自己发布的公告）
+    canEditNotice(row) {
+      if (this.role === 'ADMIN') return true;
+      if (this.role === 'COACH') return row.user === this.userInfo.username;
+      return false;
+    },
+
     // 修改公开状态
     async changeOpen(row) {
+      if (!this.hasPermission('notice-status')) {
+        ElMessage.warning('您无权修改公开状态');
+        row.open = !row.open; // 还原状态
+        return;
+      }
       try {
         const res = await updateStatus(row.id, row.open);
         if (res.code === '200') {
           ElMessage.success('状态更新成功');
+          this.load(this.pageNum); // 刷新数据以更新过滤结果
         } else {
           row.open = !row.open; // 还原状态
           ElMessage.error(res.msg || '状态更新失败');
@@ -126,61 +187,84 @@ export default {
 
     // 批量删除
     async delBatch() {
-      if (!this.ids.length) {
-        ElMessage.warning('请选择要删除的数据')
-        return
+      if (!this.hasPermission('notice-delete')) {
+        ElMessage.warning('您无权批量删除公告');
+        return;
       }
-
+      if (!this.ids.length) {
+        ElMessage.warning('请选择要删除的数据');
+        return;
+      }
       try {
-        await ElMessageBox.confirm('确认删除选中的记录吗？', '提示', {
-          type: 'warning'
-        })
-        const res = await batchDeleteNotice(this.ids)
+        await ElMessageBox.confirm('确认删除选中的记录吗？', '提示', { type: 'warning' });
+        const res = await batchDeleteNotice(this.ids);
         if (res.code === '200') {
           ElMessage.success(res.msg || '批量删除成功');
-          this.load(1)
-        }else {
+          this.load(1);
+        } else {
           ElMessage.error(res.msg || '批量删除失败');
         }
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('批量删除失败')
+          ElMessage.error('批量删除失败');
         }
       }
     },
 
-    handleSelectionChange(rows) {   // 当前选中的所有的行数据
-      this.ids = rows.map(v => v.id)
+    handleSelectionChange(rows) {
+      this.ids = rows.map(v => v.id);
     },
+
     async del(id) {
+      if (!this.hasPermission('notice-delete')) {
+        ElMessage.warning('您无权删除公告');
+        return;
+      }
       try {
-        await ElMessageBox.confirm('确认删除该条公告吗？', '提示', {
-          type: 'warning'
-        })
-        const res = await deleteNotice(id)
+        await ElMessageBox.confirm('确认删除该条公告吗？', '提示', { type: 'warning' });
+        const res = await deleteNotice(id);
         if (res.code === '200') {
-          ElMessage.success(res.msg)
-          this.load(1)
+          ElMessage.success(res.msg);
+          this.load(1);
         }
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('删除失败')
+          ElMessage.error('删除失败');
         }
       }
     },
-    handleEdit(row) {   // 编辑数据
-      this.form = JSON.parse(JSON.stringify(row))  // 给form对象赋值  注意要深拷贝数据
-      this.fromVisible = true   // 打开弹窗
+
+    handleEdit(row) {
+      if (!this.hasPermission('notice-edit') || !this.canEditNotice(row)) {
+        ElMessage.warning('您无权编辑此公告');
+        return;
+      }
+      this.form = JSON.parse(JSON.stringify(row)); // 深拷贝数据
+      this.fromVisible = true;
     },
-    handleAdd() {   // 新增数据
+
+    handleAdd() {
+      if (!this.hasPermission('notice-add')) {
+        ElMessage.warning('您无权新增公告');
+        return;
+      }
       this.form = { 
-        user: JSON.parse(localStorage.getItem('userInfo') || '{}').username || '未知用户', // 默认发布人为当前用户
+        user: this.userInfo.username || '未知用户', // 默认发布人为当前用户
         time: new Date().toISOString().slice(0, 19).replace('T', ' '), // 当前时间
         open: false // 默认不公开
       };
       this.fromVisible = true;
     },
-    async save() {   // 保存按钮触发的逻辑  它会触发新增或者更新
+
+    async save() {
+      if (!this.hasPermission(this.form.id ? 'notice-edit' : 'notice-add')) {
+        ElMessage.warning(`您无权${this.form.id ? '编辑' : '新增'}公告`);
+        return;
+      }
+      if (this.form.id && !this.canEditNotice(this.form)) {
+        ElMessage.warning('您无权编辑此公告');
+        return;
+      }
       try {
         await this.$refs.formRef.validate();
         const api = this.form.id ? updateNotice : addNotice;
@@ -197,11 +281,13 @@ export default {
         ElMessage.error('操作失败');
       }
     },
+
     reset() {
-      this.title = ''
-      this.load()
+      this.title = '';
+      this.load();
     },
-    async load(pageNum) {  // 分页查询
+
+    async load(pageNum) {
       if (pageNum) this.pageNum = pageNum;
       try {
         const res = await getNoticeList({
@@ -210,10 +296,8 @@ export default {
           title: this.title
         });
         console.log('Response from getNoticeList:', res);
-
-
         if (res.code === '200') {
-          this.tableData = res.data.records || res.data.list || []; // 适配可能的字段差异
+          this.tableData = res.data.records || res.data.list || [];
           this.total = res.data.total || 0;
         } else {
           ElMessage.error(res.msg || '获取数据失败');
@@ -222,11 +306,12 @@ export default {
         ElMessage.error('获取数据失败');
       }
     },
+
     handleCurrentChange(pageNum) {
-      this.load(pageNum)
-    },
+      this.load(pageNum);
+    }
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>

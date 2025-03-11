@@ -138,6 +138,10 @@ const handleLogin = async () => {
       localStorage.setItem('userInfo', JSON.stringify(res.data))
       // 如果后端没有返回token，使用用户名作为临时token
       const token = res.data.token || res.data.username
+      if (!token) {
+        ElMessage.error('未获取到有效的 token')
+        return
+      }
       localStorage.setItem('token', token)
 
       console.log('存储的用户信息:', localStorage.getItem('userInfo'))

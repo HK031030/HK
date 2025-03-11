@@ -45,16 +45,16 @@
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
       <el-table-column prop="createTime" label="申请时间" width="180" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right" v-if="hasPermission('course-appointment-audit')">
         <template #default="{ row }">
           <el-button 
-            v-if="row.status === '待审核'"
+            v-if="row.status === '待审核' && canAuditAppointment(row)"
             type="success" 
             size="small" 
             @click="handleApprove(row)"
           >通过</el-button>
           <el-button 
-            v-if="row.status === '待审核'"
+            v-if="row.status === '待审核' && canAuditAppointment(row)"
             type="danger" 
             size="small" 
             @click="handleReject(row)"
@@ -137,7 +137,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { getAppointmentList, auditAppointment } from '@/api/appointment'
+import { getAppointmentList, auditAppointment } from '@/api/reservation'
 
 // 列表数据
 const appointments = ref([])

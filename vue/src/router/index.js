@@ -45,7 +45,7 @@ const routes = [
         component: () => import('@/views/manager/Password.vue') 
       },
       {
-        path: 'user',meta: { name: '用户管理' ,roles: ['ADMIN']},component: () => import('@/views/manager/User.vue')
+        path: 'user',meta: { name: '用户管理' ,roles: ['ADMIN','COACH']},component: () => import('@/views/manager/User.vue')
       },
       { 
         path: 'course', 
@@ -56,6 +56,11 @@ const routes = [
         path: 'course-appointment', 
         meta: { name: '课程预约审核',roles: ['ADMIN', 'COACH', 'USER'] }, 
         component: () => import('@/views/manager/CourseAppointment.vue') 
+      },
+      {
+        path: 'course-booking',
+        meta: { name: '预约课程', roles: ['ADMIN', 'COACH', 'USER'] },
+        component: () => import('@/views/manager/ReservationList.vue')
       },
       { 
         path: 'notice', 

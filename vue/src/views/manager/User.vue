@@ -1,224 +1,453 @@
 <template>
   <div>
-    <div>
-      <el-input style="width: 200px" placeholder="查询用户名" v-model="username"></el-input>
-      <el-input style="width: 200px; margin: 0 5px" placeholder="查询姓名" v-model="name"></el-input>
-      <el-button type="primary" @click="load(1)">查询</el-button>
-      <el-button type="info" @click="reset">重置</el-button>
+    <div class="card" style="margin-bottom: 5px">
+      <el-input clearable @clear="load" style="width: 260px; margin-right: 5px" v-model="data.username" placeholder="请输入用户名查询" :prefix-icon="Search"></el-input>
+      <el-input clearable @clear="load" style="width: 260px; margin-right: 5px" v-model="data.name" placeholder="请输入姓名查询" :prefix-icon="Search"></el-input>
+      <el-button type="primary" @click="load" v-if="canView">查 询</el-button>
+      <el-button @click="reset" v-if="canView">重 置</el-button>
     </div>
-    <div style="margin: 10px 0">
-      <el-button type="primary" plain @click="handleAdd">新增</el-button>
-      <el-button type="danger" plain @click="delBatch">批量删除</el-button>
+    <div class="card" style="margin-bottom: 5px" v-if="canEdit">
+      <el-button type="primary" @click="handleAdd">新 增</el-button>
+      <el-button type="danger" @click="deleteBatch">批量删除</el-button>
     </div>
-    <el-table :data="tableData" stripe :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"></el-table-column>
-      <el-table-column prop="id" label="序号" width="70" align="center"></el-table-column>
-      <el-table-column prop="username" label="用户名"></el-table-column>
-      <el-table-column prop="name" label="姓名"></el-table-column>
-      <el-table-column prop="phone" label="手机号"></el-table-column>
-      <el-table-column prop="email" label="邮箱"></el-table-column>
-      <el-table-column prop="avatar" label="头像">
-        <template v-slot="scope">
-          <div style="display: flex; align-items: center">
-            <el-image style="width: 50px; height: 50px; border-radius: 50%" v-if="scope.row.avatar" :src="scope.row.avatar" :preview-src-list="[scope.row.avatar]"></el-image>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="role" label="角色"></el-table-column>
-      <el-table-column label="操作" align="center" width="180">
-        <template v-slot="scope">
-          <el-button size="mini" type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="mini" type="danger" plain @click="del(scope.row.id)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
 
-    <div style="margin: 10px 0">
+    <div class="card" style="margin-bottom: 5px">
+      <el-table :data="data.tableData" style="width: 100%" @selection-change="handleSelectionChange"
+                :header-cell-style="{ color: '#333', backgroundColor: '#eaf4ff' }">
+        <el-table-column type="selection" v-if="canEdit" width="55" />
+        <el-table-column prop="username" label="账号" />
+        <el-table-column prop="name" label="名称" />
+        <el-table-column prop="phone" label="电话" />
+        <el-table-column prop="email" label="邮箱" />
+        <el-table-column label="操作" width="100" v-if="canEdit">
+          <template #default="scope">
+            <el-button type="primary" icon="Edit" circle @click="handleEdit(scope.row)"></el-button>
+            <el-button type="danger" icon="Delete" circle @click="del(scope.row.id)"></el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div class="card">
       <el-pagination
-          @current-change="handleCurrentChange"
-          :current-page="pageNum"
-          :page-size="pageSize"
-          layout="total, prev, pager, next"
-          :total="total">
-      </el-pagination>
+          v-model:current-page="data.pageNum"
+          v-model:page-size="data.pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[5, 10, 20]"
+          :total="data.total"
+          @current-change="load"
+          @size-change="load"
+      />
     </div>
 
-    <el-dialog title="用户信息" :visible.sync="formVisible" width="30%">
-      <el-form :model="form" label-width="80px" style="padding-right: 20px" :rules="rules" ref="formRef">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="用户名"></el-input>
+    <el-dialog title="管理员信息" v-model="data.formVisible" width="30%" destroy-on-close>
+      <el-form ref="formRef" :model="data.form" :rules="data.rules" label-width="80px" style="padding: 20px 30px 10px 0">
+        <el-form-item prop="username" label="用户名">
+          <el-input v-model="data.form.username" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="form.name" placeholder="姓名"></el-input>
+        <el-form-item prop="name" label="名称">
+          <el-input v-model="data.form.name" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="form.phone" placeholder="电话"></el-input>
+        <el-form-item prop="phone" label="电话">
+          <el-input v-model="data.form.phone" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="form.email" placeholder="邮箱"></el-input>
-        </el-form-item>
-        <el-form-item label="地址" prop="address">
-          <el-input type="textarea" v-model="form.address" placeholder="地址"></el-input>
-        </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-radio-group v-model="form.role">
-            <el-radio label="管理员"></el-radio>
-            <el-radio label="用户"></el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="头像">
-          <el-upload
-              class="avatar-uploader"
-              action="https://localhost:9090/file/upload"
-              :headers="{ token: user.token }"
-              :file-list="form.avatar ? [form.avatar] : []"
-              list-type="picture"
-              :on-success="handleAvatarSuccess">
-            <el-button type="primary">上传头像</el-button>
-          </el-upload>
+        <el-form-item prop="email" label="邮箱">
+          <el-input v-model="data.form.email" autocomplete="off" />
         </el-form-item>
       </el-form>
-
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="formVisible = false">取 消</el-button>
-        <el-button type="primary" @click="save">确 定</el-button>
-      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="data.formVisible = false">取 消</el-button>
+          <el-button type="primary" @click="save" v-if="canEdit">保 存</el-button>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
-import * as userApi from '@/api/user1'; // 确保路径正确
+<script setup>
+import { reactive, ref } from "vue";
+import { Search } from "@element-plus/icons-vue";
+import request from "@/utils/request.js";
+import { ElMessage, ElMessageBox } from "element-plus";
 
-export default {
-  name: "User",
-  data() {
-    return {
-      tableData: [],
-      pageNum: 1,
-      pageSize: 5,
-      username: '',
-      name: '',
-      total: 0,
-      formVisible: false,
-      form: {},
-      user: JSON.parse(localStorage.getItem('honey-user') || '{}'),
-      rules: {
-        username: [
-          { required: true, message: '请输入用户名', trigger: 'blur' }
-        ]
-      },
-      ids: []
+const data = reactive({
+  username: null,
+  name: null,
+  pageNum: 1,
+  pageSize: 5,
+  total: 0,
+  tableData: [],
+  formVisible: false,
+  form: {},
+  rules: {
+    username: [
+      { required: true, message: '请填写用户名', trigger: 'blur' }
+    ],
+    name: [
+      { required: true, message: '请填写姓名', trigger: 'blur' }
+    ],
+    phone: [
+      { required: true, message: '请填写手机号', trigger: 'blur' }
+    ],
+    email: [
+      { required: true, message: '请填写邮箱', trigger: 'blur' }
+    ]
+  },
+  rows: []
+})
+
+const formRef = ref()
+
+// 假设从本地存储或其他方式获取用户角色
+const role = ref(JSON.parse(localStorage.getItem('userInfo')).role || 'USER'); // 示例获取角色
+
+// 权限控制
+const canView = role.value === 'ADMIN' || role.value === 'COACH';
+const canEdit = role.value === 'ADMIN';
+
+const load = () => {
+  request.get('/user/selectPage', {
+    params: {
+      pageNum: data.pageNum,
+      pageSize: data.pageSize,
+      username: data.username,
+      name: data.name
     }
-  },
-  created() {
-    this.load(); // 加载分页数据
-    this.loadAllUsers(); // 加载所有用户数据
-  },
-  methods: {
-    loadAllUsers() {
-      userApi.selectAll().then(res => {
-        console.log('API 响应:', res); // 打印响应
+  }).then(res => {
+    if (res.code === '200') {
+      data.tableData = res.data.records
+      data.total = res.data.total
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
+}
+load()
+
+const reset = () => {
+  data.username = null
+  data.name = null
+  load()
+}
+
+const handleAdd = () => {
+  data.formVisible = true
+  data.form = {}
+}
+
+const add = () => {
+  formRef.value.validate((valid) => {
+    if (valid) {
+      request.post('/user/add', data.form).then(res => {
         if (res.code === '200') {
-          // 处理所有用户数据
-          console.log('所有用户数据:', res.data);
+          data.formVisible = false
+          ElMessage.success('新增成功')
+          load()
         } else {
-          this.$message.error(res.msg);
+          ElMessage.error(res.msg)
         }
-      }).catch(error => {
-        console.error('加载所有用户失败:', error);
-        this.$message.error('加载所有用户失败');
+      })
+    }
+  })
+}
+
+const handleEdit = (row) => {
+  data.form = JSON.parse(JSON.stringify(row))
+  data.formVisible = true
+}
+
+const update = () => {
+  formRef.value.validate((valid) => {
+    if (valid) {
+      request.post(`/user/update`, data.form).then(res => {
+        if (res.code === '200') {
+          data.formVisible = false;
+          ElMessage.success('修改成功');
+          load();
+        } else {
+          ElMessage.error(res.msg);
+        }
       });
-    },
-    delBatch() {
-      if (!this.ids.length) {
-        this.$message.warning('请选择数据');
-        return;
+    }
+  });
+}
+
+const save = () => {
+  data.form.id ? update() : add()
+}
+
+const del = (id) => {
+  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' }).then(res => {
+    request.delete('/user/delete/' + id).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('删除成功')
+        load()
+      } else {
+        ElMessage.error(res.msg)
       }
-      this.$confirm('您确认批量删除这些数据吗?', '确认删除', { type: "warning" }).then(() => {
-        userApi.deleteBatch(this.ids).then(res => {
-          if (res.code === '200') {
-            this.$message.success('操作成功');
-            this.load(1);
-          } else {
-            this.$message.error(res.msg);
-          }
-        });
-      }).catch(() => {});
-    },
-    handleSelectionChange(rows) {
-      this.ids = rows.map(v => v.id);
-    },
-    del(id) {
-      this.$confirm('您确认删除吗?', '确认删除', { type: "warning" }).then(() => {
-        userApi.deleteUser(id).then(res => {
-          if (res.code === '200') {
-            this.$message.success('操作成功');
-            this.load(1);
-          } else {
-            this.$message.error(res.msg);
-          }
-        });
-      }).catch(() => {});
-    },
-    handleEdit(row) {
-      this.form = JSON.parse(JSON.stringify(row));
-      this.formVisible = true;
-    },
-    handleAdd() {
-      this.form = { role: '用户' };
-      this.formVisible = true;
-    },
-    save() {
-      this.$refs.formRef.validate((valid) => {
-        if (valid) {
-          userApi[this.form.id ? 'updateUser' : 'addUser'](this.form).then(res => {
-            if (res.code === '200') {
-              this.$message.success('保存成功');
-              this.load(1);
-              this.formVisible = false;
-            } else {
-              this.$message.error(res.msg);
-            }
-          });
-        }
-      });
-    },
-    reset() {
-      this.name = '';
-      this.username = '';
-      this.load();
-    },
-    load(pageNum) {
-      if (pageNum) this.pageNum = pageNum;
-      userApi.selectPage({
-        pageNum: this.pageNum,
-        pageSize: this.pageSize,
-        username: this.username,
-        name: this.name,
-      }).then(res => {
-        if (res.code === '200') {
-          this.tableData = res.data.records;
-          console.log('加载的数据:', this.tableData); // 打印加载的数据
-          this.total = res.data.total;
-        } else {
-          this.$message.error(res.msg);
-        }
-      }).catch(error => {
-        console.error('加载用户失败:', error);
-        this.$message.error('加载用户失败');
-      });
-    },
-    handleCurrentChange(pageNum) {
-      this.load(pageNum);
-    },
-    handleAvatarSuccess(response, file, filelist) {
-      this.form.avatar = response.data; // 更新头像链接
-    }
+    })
+  }).catch(err => {})
+}
+
+const handleSelectionChange = (rows) => {
+  data.rows = rows
+}
+
+const deleteBatch = () => {
+  if (data.rows.length === 0) {
+    ElMessage.warning('请选择数据');
+    return;
   }
+
+  const ids = data.rows.map(row => row.id);
+  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' })
+      .then(() => {
+        request.delete('/user/delete/batch', {
+          data: ids
+        })
+            .then(res => {
+              if (res.code === '200') {
+                ElMessage.success('批量删除成功');
+                load();
+              } else {
+                ElMessage.error(res.msg);
+              }
+            })
+            .catch(error => {
+              ElMessage.error('删除请求失败，请稍后再试');
+            });
+      })
+      .catch(err => {
+        console.log('用户取消删除操作');
+      });
 }
 </script>
 
-<style scoped>
-/* 添加样式 */
-</style>
+
+
+<!--<template>-->
+<!--  <div>-->
+<!--    <div class="card" style="margin-bottom: 5px">-->
+<!--      <el-input clearable @clear="load" style="width: 260px; margin-right: 5px" v-model="data.username" placeholder="请输入用户名查询" :prefix-icon="Search"></el-input>-->
+<!--      <el-input clearable @clear="load" style="width: 260px; margin-right: 5px" v-model="data.name" placeholder="请输入姓名查询" :prefix-icon="Search"></el-input>-->
+<!--      <el-button type="primary" @click="load">查 询</el-button>-->
+<!--      <el-button @click="reset">重 置</el-button>-->
+<!--    </div>-->
+<!--    <div class="card" style="margin-bottom: 5px">-->
+<!--      <el-button type="primary" @click="handleAdd">新 增</el-button>-->
+<!--      <el-button type="danger" @click="deleteBatch">批量删除</el-button>-->
+<!--    </div>-->
+
+<!--    <div class="card" style="margin-bottom: 5px">-->
+<!--      <el-table :data="data.tableData" style="width: 100%" @selection-change="handleSelectionChange"-->
+<!--                :header-cell-style="{ color: '#333', backgroundColor: '#eaf4ff' }">-->
+<!--        <el-table-column type="selection" width="55" />-->
+<!--        <el-table-column prop="username" label="账号" />-->
+<!--        <el-table-column prop="name" label="名称" />-->
+<!--        <el-table-column prop="phone" label="电话" />-->
+<!--        <el-table-column prop="email" label="邮箱" />-->
+<!--        <el-table-column label="操作" width="100">-->
+<!--          <template #default="scope">-->
+<!--            <el-button type="primary" icon="Edit" circle @click="handleEdit(scope.row)"></el-button>-->
+<!--            <el-button type="danger" icon="Delete" circle @click="del(scope.row.id)"></el-button>-->
+<!--          </template>-->
+<!--        </el-table-column>-->
+<!--      </el-table>-->
+<!--    </div>-->
+<!--    <div class="card">-->
+<!--      <el-pagination-->
+<!--          v-model:current-page="data.pageNum"-->
+<!--          v-model:page-size="data.pageSize"-->
+<!--          layout="total, sizes, prev, pager, next, jumper"-->
+<!--          :page-sizes="[5, 10, 20]"-->
+<!--          :total="data.total"-->
+<!--          @current-change="load"-->
+<!--          @size-change="load"-->
+<!--      />-->
+<!--    </div>-->
+
+<!--    <el-dialog title="管理员信息" v-model="data.formVisible" width="30%" destroy-on-close>-->
+<!--      <el-form ref="formRef" :model="data.form" :rules="data.rules" label-width="80px" style="padding: 20px 30px 10px 0">-->
+<!--        <el-form-item prop="username" label="用户名">-->
+<!--          <el-input v-model="data.form.username" autocomplete="off" />-->
+<!--        </el-form-item>-->
+<!--        <el-form-item prop="name" label="名称">-->
+<!--          <el-input v-model="data.form.name" autocomplete="off" />-->
+<!--        </el-form-item>-->
+<!--        <el-form-item prop="phone" label="电话">-->
+<!--          <el-input v-model="data.form.phone" autocomplete="off" />-->
+<!--        </el-form-item>-->
+<!--        <el-form-item prop="email" label="邮箱">-->
+<!--          <el-input v-model="data.form.email" autocomplete="off" />-->
+<!--        </el-form-item>-->
+<!--      </el-form>-->
+<!--      <template #footer>-->
+<!--        <div class="dialog-footer">-->
+<!--          <el-button @click="data.formVisible = false">取 消</el-button>-->
+<!--          <el-button type="primary" @click="save">保 存</el-button>-->
+<!--        </div>-->
+<!--      </template>-->
+<!--    </el-dialog>-->
+<!--  </div>-->
+<!--</template>-->
+
+<!--<script setup>-->
+<!--import { reactive, ref } from "vue";-->
+<!--import {Search} from "@element-plus/icons-vue";-->
+<!--import request from "@/utils/request.js";-->
+<!--import {ElMessage, ElMessageBox} from "element-plus";-->
+
+<!--const data = reactive({-->
+<!--  username: null,-->
+<!--  name: null,-->
+<!--  pageNum: 1,-->
+<!--  pageSize: 5,-->
+<!--  total: 0,-->
+<!--  tableData: [],-->
+<!--  formVisible: false,-->
+<!--  form: {},-->
+<!--  rules: {-->
+<!--    username: [-->
+<!--      { required: true, message: '请填写用户名', trigger: 'blur' }-->
+<!--    ],-->
+<!--    name: [-->
+<!--      { required: true, message: '请填写姓名', trigger: 'blur' }-->
+<!--    ],-->
+<!--    phone: [-->
+<!--      { required: true, message: '请填写手机号', trigger: 'blur' }-->
+<!--    ],-->
+<!--    email: [-->
+<!--      { required: true, message: '请填写邮箱', trigger: 'blur' }-->
+<!--    ]-->
+<!--  },-->
+<!--  rows: []-->
+<!--})-->
+
+<!--const formRef = ref()-->
+
+<!--const load = () => {-->
+<!--  request.get('/user/selectPage', {-->
+<!--    params: {-->
+<!--      pageNum: data.pageNum,-->
+<!--      pageSize: data.pageSize,-->
+<!--      username: data.username,-->
+<!--      name: data.name-->
+<!--    }-->
+<!--  }).then(res => {-->
+<!--    if (res.code === '200') {-->
+<!--      data.tableData = res.data.records-->
+<!--      data.total = res.data.total-->
+<!--    } else {-->
+<!--      ElMessage.error(res.msg)-->
+<!--    }-->
+<!--  })-->
+<!--}-->
+<!--load()-->
+
+<!--const reset = () => {-->
+<!--  data.username = null-->
+<!--  data.name = null-->
+<!--  load()-->
+<!--}-->
+
+<!--const handleAdd = () => {-->
+<!--  data.formVisible = true-->
+<!--  data.form = {}-->
+<!--}-->
+
+<!--const add = () => {-->
+<!--  // formRef 是表单的引用-->
+<!--  formRef.value.validate((valid) => {-->
+<!--    if (valid) {   // 验证通过的情况下-->
+<!--      request.post('/user/add', data.form).then(res => {-->
+<!--        if (res.code === '200') {-->
+<!--          data.formVisible = false-->
+<!--          ElMessage.success('新增成功')-->
+<!--          load()-->
+<!--        } else {-->
+<!--          ElMessage.error(res.msg)-->
+<!--        }-->
+<!--      })-->
+<!--    }-->
+<!--  })-->
+<!--}-->
+
+<!--const handleEdit = (row) => {-->
+<!--  data.form = JSON.parse(JSON.stringify(row))  // 深度拷贝数据-->
+<!--  data.formVisible = true-->
+<!--}-->
+
+<!--const update = () => {-->
+<!--  // formRef 是表单的引用-->
+<!--  formRef.value.validate((valid) => {-->
+<!--    if (valid) { // 验证通过的情况下-->
+<!--      request.post(`/user/update`, data.form).then(res => {-->
+<!--        if (res.code === '200') {-->
+<!--          data.formVisible = false;-->
+<!--          ElMessage.success('修改成功');-->
+<!--          load();-->
+<!--        } else {-->
+<!--          ElMessage.error(res.msg);-->
+<!--        }-->
+<!--      });-->
+<!--    }-->
+<!--  });-->
+<!--}-->
+
+<!--const save = () => {-->
+<!--  data.form.id ? update() : add()-->
+<!--}-->
+
+<!--const del = (id) => {-->
+<!--  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' }).then(res => {-->
+<!--    request.delete('/user/delete/' + id).then(res => {-->
+<!--      if (res.code === '200') {-->
+<!--        ElMessage.success('删除成功')-->
+<!--        load()-->
+<!--      } else {-->
+<!--        ElMessage.error(res.msg)-->
+<!--      }-->
+<!--    })-->
+<!--  }).catch(err => {})-->
+<!--}-->
+
+<!--const handleSelectionChange = (rows) => {  // rows 就是实际选择的数组-->
+<!--  data.rows = rows-->
+<!--  console.log(rows)-->
+<!--}-->
+
+<!--const deleteBatch = () => {-->
+<!--  if (data.rows.length === 0) {-->
+<!--    ElMessage.warning('请选择数据');-->
+<!--    return;-->
+<!--  }-->
+
+<!--  // 提取所有选中行的 ID-->
+<!--  const ids = data.rows.map(row => row.id);-->
+<!--  console.log('准备删除的 IDs:', ids); // 调试输出-->
+
+<!--  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' })-->
+<!--      .then(() => {-->
+<!--        // 调用批量删除的 API-->
+<!--        request.delete('/user/delete/batch', {-->
+<!--          data: ids // 使用 data 发送 ids 数组-->
+<!--        })-->
+<!--            .then(res => {-->
+<!--              console.log('删除响应:', res); // 调试输出-->
+<!--              if (res.code === '200') {-->
+<!--                ElMessage.success('批量删除成功');-->
+<!--                load();-->
+<!--              } else {-->
+<!--                ElMessage.error(res.msg);-->
+<!--              }-->
+<!--            })-->
+<!--            .catch(error => {-->
+<!--              console.error('删除请求失败:', error); // 捕获并打印错误-->
+<!--              ElMessage.error('删除请求失败，请稍后再试');-->
+<!--            });-->
+<!--      })-->
+<!--      .catch(err => {-->
+<!--        console.log('用户取消删除操作'); // 用户取消操作的日志-->
+<!--      });-->
+<!--}-->
+<!--</script>-->

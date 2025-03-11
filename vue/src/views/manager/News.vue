@@ -2,59 +2,59 @@
   <div>
     <div>
       <el-input style="width: 200px" placeholder="查询标题" v-model="title" />
-      <el-button type="primary" style="margin-left: 10px" @click="load(1)">查询</el-button>
-      <el-button type="info" @click="reset">重置</el-button>
+      <el-button type="primary" style="margin-left: 10px" @click="load(1)" v-if="canView">查询</el-button>
+      <el-button type="info" @click="reset" v-if="canView">重置</el-button>
     </div>
-    <div style="margin: 10px 0">
+    <div style="margin: 10px 0" v-if="canEdit">
       <el-button type="primary" plain @click="handleAdd">新增</el-button>
       <el-button type="danger" plain @click="delBatch">批量删除</el-button>
     </div>
-    <el-table 
-      :data="tableData" 
-      stripe 
-      :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }" 
-      @selection-change="handleSelectionChange"
+    <el-table
+        :data="tableData"
+        stripe
+        :header-cell-style="{ backgroundColor: 'aliceblue', color: '#666' }"
+        @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="selection" v-if="canEdit" width="55" align="center" />
       <el-table-column prop="id" label="序号" width="70" align="center" />
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="description" label="简介" />
       <el-table-column prop="content" label="内容">
         <template #default="scope">
-          <el-button @click="showContent(scope.row.content)" size="mini">显示内容</el-button>
+          <el-button @click="showContent(scope.row.content)" size="small">显示内容</el-button>
         </template>
       </el-table-column>
       <el-table-column prop="content" label="详情页">
         <template #default="scope">
-          <el-button @click="$router.push('/newsDetail?id=' + scope.row.id)" size="mini">在详情页显示</el-button>
+          <el-button @click="$router.push('/newsDetail?id=' + scope.row.id)" size="small">在详情页显示</el-button>
         </template>
       </el-table-column>
       <el-table-column prop="author" label="发布人" />
       <el-table-column prop="time" label="发布时间" />
-      <el-table-column label="操作" align="center" width="180">
+      <el-table-column label="操作" align="center" width="180" v-if="canEdit">
         <template #default="scope">
-          <el-button size="mini" type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="mini" type="danger" plain @click="del(scope.row.id)">删除</el-button>
+          <el-button size="small" type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
+          <el-button size="small" type="danger" plain @click="del(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <div style="margin: 10px 0">
       <el-pagination
-        @current-change="handleCurrentChange"
-        :current-page="pageNum"
-        :page-size="pageSize"
-        layout="total, prev, pager, next"
-        :total="total"
+          @current-change="handleCurrentChange"
+          :current-page="pageNum"
+          :page-size="pageSize"
+          layout="total, prev, pager, next"
+          :total="total"
       />
     </div>
 
-    <el-dialog 
-      v-model="fromVisible"
-      title="新闻信息" 
-      width="60%" 
-      @close="closeDialog" 
-      :close-on-click-modal="false"
+    <el-dialog
+        v-model="fromVisible"
+        title="新闻信息"
+        width="60%"
+        @close="closeDialog"
+        :close-on-click-modal="false"
     >
       <el-form :model="form" label-width="80px" style="padding-right: 20px" :rules="rules" ref="formRef">
         <el-form-item label="标题" prop="title">
@@ -71,15 +71,15 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="fromVisible = false">取消</el-button>
-          <el-button type="primary" @click="save">确定</el-button>
+          <el-button type="primary" @click="save" v-if="canEdit">确定</el-button>
         </div>
       </template>
     </el-dialog>
 
-    <el-dialog 
-      v-model="fromVisible1"
-      title="内容" 
-      width="60%"
+    <el-dialog
+        v-model="fromVisible1"
+        title="内容"
+        width="60%"
     >
       <el-card class="w-e-text">
         <div v-html="content"></div>
@@ -122,7 +122,19 @@ const form = reactive({
   time: ''
 });
 const editor = ref(null);
-const user = JSON.parse(localStorage.getItem('honey-user') || '{}');
+// const user = JSON.parse(localStorage.getItem('honey-user') || '{}'); // 假设存储用户信息
+
+// 假设从本地存储或其他方式获取用户角色
+const role = ref(JSON.parse(localStorage.getItem('userInfo')).role || 'USER'); // 示例获取角色
+console.log("role:", role)
+
+const user = ref(JSON.parse(localStorage.getItem('userInfo')));
+
+// 权限控制
+const canView = role.value === 'ADMIN' || role.value === 'COACH'; // ADMIN 和 COACH 可以查看
+const canEdit = role.value === 'ADMIN' || role.value === 'COACH'; // ADMIN 和 COACH 可以编辑和删除
+console.log("canView,canEdit",canView,canEdit)
+
 
 // 表单验证规则
 const rules = {

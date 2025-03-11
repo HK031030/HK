@@ -14,7 +14,11 @@
       <div class="manager-header-right">
         <el-dropdown style="cursor: pointer" @command="handleCommand">
           <div style="padding-right: 20px; display: flex; align-items: center">
-            <img style="width: 40px; height: 40px; border-radius: 50%;" src="../assets/imgs/avatar.png" alt="">
+            <img 
+              :src="userInfo.avatar || '../assets/imgs/avatar.png'" 
+              style="width: 40px; height: 40px; border-radius: 50%;" 
+              alt=""
+            >
             <span style="margin-left: 5px; color: white">{{ userInfo.username || '管理员' }}</span>
           </div>
           <template #dropdown>
@@ -70,12 +74,16 @@
             <el-menu-item v-if="hasPermission('course-info')" index="/manager/course">
               <el-icon><Document /></el-icon>
               <span>课程信息</span>
-              <span v-if="hasPermission('course-info-edit')" style="margin-left: 10px; color: blue"></span>
+              <span v-if="hasPermission('course-info-edit')" ></span>
             </el-menu-item>
             <el-menu-item v-if="hasPermission('course-appointment')" index="/manager/course-appointment">
               <el-icon><Calendar /></el-icon>
               <span>预约审核</span>
-              <span v-if="hasPermission('course-appointment-audit')" style="margin-left: 10px; color: green"></span>
+              <span v-if="hasPermission('course-appointment-audit')" ></span>
+            </el-menu-item>
+            <el-menu-item v-if="hasPermission('course-booking')" index="/manager/course-booking">
+              <el-icon><Calendar /></el-icon>
+              <span>课程预约</span>
             </el-menu-item>
           </el-sub-menu>
         </el-menu>
@@ -105,28 +113,37 @@ const role = ref(userInfo.value.role || '');  // 当前角色
 const permissions = {
   'ADMIN': [
     'system-home',
-    'info-manage', 'news', 'notice',
+    'info-manage', 
+    'news', 'news-add', 'news-edit', 'news-delete', // 新闻完全权限
+    'notice', 'notice-add', 'notice-edit', 'notice-delete', // 公告完全权限
     'user-manage', 'user-info',
     'course-manage',           // 访问课程管理模块
     'course-info',            // 查看课程信息
     'course-info-edit',       // 编辑课程信息（增删改）
     'course-appointment',     // 查看预约记录
-    'course-appointment-audit' // 审核和取消预约
+    'course-appointment-audit', // 审核和取消预约
+    'course-booking'
   ],
   'COACH': [
     'system-home',
-    'info-manage', 'news', 'notice',
+    'info-manage', 
+    'news', 
+    'notice', 'notice-add', 'notice-edit', // 查看、添加、编辑公告，无删除
+    'user-manage', 'user-info',
     'course-manage',           // 访问课程管理模块
     'course-info',            // 查看自己负责的课程信息
     'course-info-edit',       // 编辑自己负责的课程（可选）
     'course-appointment',     // 查看自己课程的预约
-    'course-appointment-audit' // 审核自己课程的预约
+    'course-appointment-audit', // 审核自己课程的预约
+    'course-booking'
   ],
   'USER': [
     'system-home',
     'info-manage', 'news', 'notice',
-    'course-manage',           // 访问课程管理模块
-    'course-info'             // 查看所有课程信息（只读）
+    'course-manage', 
+    'course-reserve',          // 访问课程管理模块
+    'course-info',             // 查看所有课程信息（只读）
+    'course-booking'
   ]
 };
 
@@ -179,6 +196,8 @@ const updateUser = (user) => {
 // 调试日志
 onMounted(() => {
   console.log('权限配置:', permissions);
+  console.log('Current role:', role.value);
+  console.log('Current route:', router.currentRoute.value.path);
   
 });
 </script>
