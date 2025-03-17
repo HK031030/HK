@@ -103,6 +103,7 @@ import { ElMessage } from 'element-plus'
 import { User, Lock, Phone, Message } from '@element-plus/icons-vue'
 import { register } from '@/api/user'
 
+
 const router = useRouter()
 const loading = ref(false)
 const formRef = ref()
@@ -160,43 +161,44 @@ const rules = {
 }
 
 const handleRegister = async () => {
-  if (!formRef.value) return
-  
-  await formRef.value.validate(async (valid) => {
-    if (!valid) {
-      ElMessage.error('请正确填写所有必填项')
-      return
-    }
-    
-    loading.value = true
-    try {
-      // 构造要发送的数据对象
-      const registerData = {
-        username: form.username,
-        password: form.password,
-        phone: form.phone,
-        email: form.email,
-        role: 'USER'
-      }
-      
-      // 在发送请求前打印数据
-      console.log('注册请求数据:', registerData)
-      
-      const res = await register(registerData)
+    if (!formRef.value) return;
 
-      if (res.code === "200") {
-        ElMessage.success(res.msg || '注册成功，请登录')
-        router.push('/login')
-      } else {
-        ElMessage.error(res.msg || '注册失败')
-      }
+    try {
+        const valid = await formRef.value.validate();
+        if (!valid) {
+            ElMessage.error('请正确填写所有必填项');
+            return;
+        }
+
+        loading.value = true;
+        const registerData = {
+            username: form.username,
+            password: form.password,
+            phone: form.phone,
+            email: form.email,
+            role: 'USER'
+        };
+        console.log('注册请求数据:', registerData);
+
+        const res = await register(registerData);
+        console.log('注册响应:', res);
+
+        if (res.code === "200") {
+            if (res.data?.token) {
+                localStorage.setItem('token', res.data.token);
+                console.log('注册存储的 token:', res.data.token);
+            }
+            ElMessage.success(res.msg || '注册成功，请登录');
+            router.push('/login');
+        } else {
+            ElMessage.error(res.msg || '注册失败');
+        }
     } catch (error) {
-      console.error('注册失败:', error)
-      ElMessage.error('注册失败，请稍后重试')
+        console.error('注册失败:', error.response?.data || error);
+        ElMessage.error('注册失败，请稍后重试');
     } finally {
-      loading.value = false
+        loading.value = false;
     }
-  })
 }
 </script>
 

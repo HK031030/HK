@@ -52,6 +52,8 @@ const loadReservations = async () => {
       coachId: props.coachId
     };
     const res = await getReservationList(params);
+    
+console.log('接口返回:', res);
     if (res.code === '200') {
       reservations.value = res.data.records || [];
       total.value = res.data.total || 0;

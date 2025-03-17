@@ -1,5 +1,13 @@
 <template>
   <div class="login">
+    <video autoplay muted loop class="login-video">
+      <source :src="videoSrc" type="video/mp4" />
+      
+    </video>
+    <div class="welcome-text">
+      <span class="text-line">欢迎您登录</span>
+      <span class="text-line">启航驾校！</span>
+    </div>
     <div class="login-form">
       <h3 class="title">驾校管理系统</h3>
       <form @submit.prevent="handleLogin">
@@ -79,12 +87,13 @@
 </template>
 
 <script setup>
-import { ref, toRefs } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/user'
 import CaptchaComponent from './Captcha.vue' // 引入验证码组件
+
 
 const router = useRouter()
 const username = ref('')
@@ -97,94 +106,154 @@ const forgetUserForm = {}
 // 访问验证码组件的方法
 const captchaRef = ref(null)
 
-const handleLogin = async () => {
-  try {
-    if (!username.value || !password.value) {
-      ElMessage.error('用户名和密码不能为空')
-      return
-    }
+const videoSrc = ref(new URL('../assets/imgs/background.mp4', import.meta.url).href)
 
-    // 验证验证码
-    if (!captchaRef.value) {
-      ElMessage.error('验证码组件加载失败')
-      return
-    }
+// 逐字动画逻辑
+onMounted(() => {
+  const textLines = document.querySelectorAll('.text-line')
+  let totalDelay = 0 // 累计延迟，确保第二行接续第一行
 
-    const captchaText = captchaRef.value.captcha// 注意这里要访问 .value
-    const userInput = captchaRef.value.userInput // 注意这里要访问 .value
-
-    if (!userInput) {
-      ElMessage.error('请输入验证码')
-      return
-    }
-
-    if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
-      ElMessage.error('验证码错误，请重试')
-      captchaRef.value.generateCaptcha()
-      return
-    }
-
-    loading.value = true
-    const res = await login({
-      username: username.value,
-      password: password.value,
-      role: role.value // 添加角色到登录请求中
+  textLines.forEach((line, lineIndex) => {
+    const text = line.textContent
+    line.innerHTML = '' // 清空原始文本
+    text.split('').forEach((char, charIndex) => {
+      const span = document.createElement('span')
+      span.textContent = char
+      span.className = 'char'
+      // 每个字符延迟 0.3 秒，第一行结束后第二行接着开始
+      span.style.animationDelay = `${totalDelay + charIndex * 0.3}s`
+      line.appendChild(span)
     })
+    totalDelay += text.length * 0.3 // 更新总延迟，第一行完成后第二行开始
+  })
+})
 
-    console.log('登录响应:', res)
-
-    if (res.code === '200') {
-      // 存储用户信息
-      localStorage.setItem('userInfo', JSON.stringify(res.data))
-      // 如果后端没有返回token，使用用户名作为临时token
-      const token = res.data.token || res.data.username
-      if (!token) {
-        ElMessage.error('未获取到有效的 token')
-        return
-      }
-      localStorage.setItem('token', token)
-
-      console.log('存储的用户信息:', localStorage.getItem('userInfo'))
-      console.log('存储的token:', localStorage.getItem('token'))
-
-      ElMessage.success(res.msg || '登录成功')
-      
-      // 使用 await 和 try-catch 包裹路由跳转
-      try {
-        await router.push({
-          path: '/manager/home',
-          replace: true
+const handleLogin = async () => {
+    try {
+        if (!username.value || !password.value) {
+            ElMessage.error('用户名和密码不能为空')
+            return
+        }
+        const captchaText = captchaRef.value.captcha
+        const userInput = captchaRef.value.userInput
+        if (!userInput) {
+            ElMessage.error('请输入验证码')
+            return
+        }
+        if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
+            ElMessage.error('验证码错误，请重试')
+            captchaRef.value.generateCaptcha()
+            return
+        }
+        loading.value = true
+        const res = await login({
+            username: username.value,
+            password: password.value,
+            role: role.value
         })
-      } catch (routerError) {
-        console.error('路由跳转失败:', routerError)
-      }
-    } else {
-      ElMessage.error(res.msg || '登录失败')
-      captchaRef.value?.generateCaptcha()
+        console.log('登录响应:', res)
+        if (res.code === '200') {
+            // 存储用户信息
+            localStorage.setItem('userInfo', JSON.stringify(res.data))
+            // 检查 token 是否存在
+            const token = res.data.token
+            if (!token) {
+                ElMessage.error('后端未返回有效的 token')
+                return
+            }
+            localStorage.setItem('token', token)
+            console.log('存储的用户信息:', localStorage.getItem('userInfo'))
+            console.log('存储的 token:', localStorage.getItem('token'))
+            ElMessage.success(res.msg || '登录成功')
+            try {
+                await router.push({ path: '/manager/home', replace: true })
+            } catch (routerError) {
+                console.error('路由跳转失败:', routerError)
+            }
+        } else {
+            ElMessage.error(res.msg || '登录失败')
+            captchaRef.value?.generateCaptcha()
+        }
+    } catch (error) {
+        console.error('登录失败:', error)
+        ElMessage.error('登录失败，请稍后重试')
+        captchaRef.value?.generateCaptcha()
+    } finally {
+        loading.value = false
     }
-  } catch (error) {
-    console.error('登录失败:', error)
-    ElMessage.error('登录失败，请稍后重试')
-    captchaRef.value?.generateCaptcha()
-  } finally {
-    loading.value = false
-  }
 }
 
 const handleForgetPass = () => {
   router.push('/forgot-password')
 }
 
+
 </script>
 
 <style lang="scss" scoped>
 .login {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   height: 100vh;
-  background-image: url("../assets/imgs/loginbackground.jpg");
-  background-size: cover;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: 1;
+}
+
+.welcome-text {
+  position: absolute;
+  top: 40%;
+  left: 10%;
+  transform: translateY(-50%);
+  z-index: 2;
+  color: white;
+  font-size: 3rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+
+.text-line {
+  display: flex; /* 字符横向排列 */
+}
+
+:deep(.char) {
+  opacity: 0;
+  display: inline-block;
+  animation: typeAndFade 8s infinite; /* 总时长 8 秒，无限循环 */
+  margin-right: 10px; /* 字符间距 */
+}
+
+@keyframes typeAndFade {
+  0% {
+    opacity: 0; /* 开始隐藏 */
+  }
+  10% {
+    opacity: 1; /* 快速显现，模拟打字 */
+  }
+  50% {
+    opacity: 1; /* 保持显示直到所有字符打印完 */
+  }
+  60% {
+    opacity: 0; /* 一起淡出 */
+  }
+  100% {
+    opacity: 0; /* 保持隐藏，直到循环开始 */
+  }
 }
 
 .title {
@@ -194,10 +263,14 @@ const handleForgetPass = () => {
 }
 
 .login-form {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
   width: 400px;
   padding: 25px 25px 5px 25px;
+  position: relative;
+  z-index: 2;
+  margin-right: 10%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 
   .form-item {
     margin-bottom: 20px;
@@ -207,6 +280,7 @@ const handleForgetPass = () => {
     height: 38px;
     input {
       height: 38px;
+      border-radius: 4px;
     }
   }
 }
@@ -222,6 +296,7 @@ const handleForgetPass = () => {
   font-family: Arial;
   font-size: 12px;
   letter-spacing: 1px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .register-link {
@@ -243,9 +318,11 @@ const handleForgetPass = () => {
     }
   }
 }
+
 .register-link {
   margin-top: 20px;
-  
+  text-align: right;
+
   span {
     &:hover {
       color: #0f9876;

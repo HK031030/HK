@@ -80,3 +80,12 @@ export function createReservation(data) {
     data
   })
 }
+
+// 取消预约
+export function cancelReservation(data) {
+  return request({
+    url: '/reservations/cancel', // 匹配后端取消预约接口
+    method: 'post',
+    data,
+  });
+}

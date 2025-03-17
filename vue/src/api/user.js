@@ -54,9 +54,6 @@ export function uploadFile(data) {
   return request({
     url: '/api/file/upload',
     method: 'post',
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
     data : formData
   })
 }
@@ -71,9 +68,6 @@ export function updatePassword(data) {
   return request({
     url: '/updatePassword',
     method: 'post',
-    headers: {
-      'Content-Type': 'application/json'
-    },
     data: data
   });
 }

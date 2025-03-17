@@ -86,6 +86,17 @@
               <span>课程预约</span>
             </el-menu-item>
           </el-sub-menu>
+             <!-- 系统管理 -->
+            <el-sub-menu v-if="hasPermission('system-manage')" index="4">
+            <template #title>
+             <el-icon><Setting /></el-icon>
+             <span>系统管理</span>
+            </template>
+            <el-menu-item v-if="hasPermission('logs-view')" index="/manager/logs">
+             <el-icon><Document /></el-icon>
+              <span>日志管理</span>
+            </el-menu-item>
+          </el-sub-menu>
         </el-menu>
       </div>
 
@@ -110,6 +121,7 @@ const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
 const role = ref(userInfo.value.role || '');  // 当前角色
 
 // 权限配置
+// 权限配置
 const permissions = {
   'ADMIN': [
     'system-home',
@@ -122,7 +134,13 @@ const permissions = {
     'course-info-edit',       // 编辑课程信息（增删改）
     'course-appointment',     // 查看预约记录
     'course-appointment-audit', // 审核和取消预约
-    'course-booking'
+    'course-booking',
+    'system-manage',          // 系统管理模块
+    'logs-view',              // 查看日志
+    'logs-search',            // 搜索日志
+    'logs-export',            // 导出日志
+    'logs-clear',             // 清空日志
+    'logs-detail'             // 查看日志详情
   ],
   'COACH': [
     'system-home',
@@ -135,7 +153,10 @@ const permissions = {
     'course-info-edit',       // 编辑自己负责的课程（可选）
     'course-appointment',     // 查看自己课程的预约
     'course-appointment-audit', // 审核自己课程的预约
-    'course-booking'
+    'course-booking',
+    'system-manage',          // 系统管理模块（有限访问）
+    'logs-view',              // 查看日志（仅自己相关的）
+    'logs-search'             // 搜索日志（仅自己相关的）
   ],
   'USER': [
     'system-home',
@@ -144,6 +165,7 @@ const permissions = {
     'course-reserve',          // 访问课程管理模块
     'course-info',             // 查看所有课程信息（只读）
     'course-booking'
+    // 普通用户没有日志管理权限
   ]
 };
 

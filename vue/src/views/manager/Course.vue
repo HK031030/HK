@@ -8,9 +8,9 @@
       <el-tab-pane label="我的预约" name="reservations" v-if="role === 'USER'">
         <ReservationList :userId="userInfo.id" />
       </el-tab-pane>
-      <el-tab-pane label="课程预约" name="reservations" v-if="role === 'COACH' || role === 'ADMIN'">
+      <!-- <el-tab-pane label="课程预约" name="reservations" v-if="role === 'COACH' || role === 'ADMIN'">
         <ReservationList :coachId="role === 'COACH' ? userInfo.id : null" />
-      </el-tab-pane>
+      </el-tab-pane> -->
     </el-tabs>
   
     <!-- 搜索栏 -->
@@ -66,12 +66,13 @@
           />
           <el-button
             v-if="role === 'USER' && hasPermission('course-reserve')"
-            type="warning"
+            :type="row.isReserved ? 'danger' : 'warning'"
             :icon="Calendar"
             circle
-            @click="handleReserve(row)"
+            @click="row.isReserved ? handleCancelReserve(row) : handleReserve(row)"
             :disabled="row.remain === 0"
           />
+          {{ row.isReserved ? '取消' : '预约' }}
         </template>
       </el-table-column>
     </el-table>
@@ -168,11 +169,18 @@
             show-word-limit
           />
         </el-form-item>
+        <el-form-item v-if="isBooked" label="状态">
+          <el-tag type="success">已预约</el-tag>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="reserveDialogVisible = false">取消</el-button>
-        <el-button type="warning" @click="handleReserveSubmit" :loading="reserveSubmitting">
-          立即预约
+        <el-button
+          :type="isBooked ? 'danger' : 'warning'"
+          @click="isBooked ? confirmCancelReserve() : handleReserveSubmit()"
+          :loading="reserveSubmitting"
+        >
+          {{ isBooked ? '取消预约' : '立即预约' }}
         </el-button>
       </template>
     </el-dialog>
@@ -184,7 +192,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Calendar } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { getCourseList, searchCourses,addCourse, updateCourse, deleteCourse, getCourseSlots, createReservation } from '@/api/course'
-import ReservationList from './ReservationList.vue';
+// import ReservationList from './ReservationList.vue';
 
 const courses = ref([])
 const loading = ref(false)
@@ -231,6 +239,25 @@ const loadCoaches = async () => {
     ElMessage.error('加载教练失败')
   }
 }
+// 新增方法：检查用户预约状态
+const checkUserReservations = async () => {
+  try {
+    const res = await request.get('/reservations/user', {
+      params: { userId: userInfo.value.id 
+                
+      },
+    });
+    console.log('预约状态响应:', res); // 打印完整响应
+    if (res.code === '200') {
+      const reservedCourseIds = res.data.map((reservation) => reservation.courseId);
+      courses.value.forEach((course) => {
+        course.isReserved = reservedCourseIds.includes(course.id);
+      });
+    }
+  } catch (error) {
+    console.error('获取用户预约状态失败:', error);
+  }
+};
 
 const loadCourses = async () => {
   loading.value = true
@@ -273,6 +300,8 @@ const loadCourses = async () => {
     loading.value = false
   }
 }
+
+
 
 // 新增：搜索课程
 const handleSearch = async () => {
@@ -460,6 +489,7 @@ const reserveSubmitting = ref(false)
 const slotLoading = ref(false)
 const currentCourse = ref({})
 const timeSlots = ref([])
+const isBooked = ref(false);
 
 const reserveForm = reactive({
   courseId: '',
@@ -503,9 +533,12 @@ const handleReserve = async (row) => {
       if (timeSlots.value.length === 0) {
         ElMessage.info('该课程暂无可用时段');
       } else {
-        // 自动填充 slotId（假设 id 存在或使用其他唯一标识）
-        reserveForm.slotId = timeSlots.value[0].id || timeSlots.value[0].courseId || `${timeSlots.value[0].startTime}-${timeSlots.value[0].endTime}`;
-        reserveDialogVisible.value = true;
+         // 如果已经预约或有可用时段，则显示对话框
+         if (timeSlots.value.length > 0) {
+          // 自动填充 slotId
+          reserveForm.slotId = timeSlots.value[0].id || timeSlots.value[0].courseId || `${timeSlots.value[0].startTime}-${timeSlots.value[0].endTime}`
+        }
+        reserveDialogVisible.value = true
       }
     } else {
       ElMessage.error(res.msg || '获取时段失败');
@@ -524,24 +557,25 @@ const handleReserveSubmit = async () => {
     reserveSubmitting.value = true
     await reserveFormRef.value.validate()
     const payload = {
-      course_id: reserveForm.courseId,
-      user_id: userInfo.value.id,
-      slot_id: reserveForm.slotId,
+      courseId: reserveForm.courseId,
+      userId: userInfo.value.id,
+      slotId: reserveForm.slotId,
       comment: reserveForm.comment, // 添加备注字段
       createdAt: new Date().toISOString()
     }
     const res = await createReservation(payload)
     if (res.code === '201') {
       ElMessage.success('预约成功')
-      reserveDialogVisible.value = false
-      loadCourses()
+      const course = courses.value.find((c) => c.id === reserveForm.courseId);
+      if (course) course.isReserved = true;
+      reserveDialogVisible.value = false;
     } else {
       ElMessage.error(res.message || '预约失败')
     }
   } catch (error) {
     console.error('预约失败:', error)
     if (error.response?.data?.code === 409) {
-      ElMessage.warning('课程已无可用时段')
+      ElMessage.warning('您已预约该课程，请勿重复预约')
     } else {
       ElMessage.error('预约失败')
     }
@@ -549,6 +583,50 @@ const handleReserveSubmit = async () => {
     reserveSubmitting.value = false
   }
 }
+
+const handleCancelReserve = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定取消预约吗？', '提示', {
+      type: 'warning',
+    });
+    const payload = {
+      courseId: row.id,
+      userId: userInfo.value.id,
+    };
+    const res = await cancelReservation(payload);
+    if (res.code === '200') {
+      ElMessage.success('取消预约成功');
+      row.isReserved = false; // 更新状态
+      loadCourses(); // 可选：刷新列表
+    } else {
+      ElMessage.error(res.message || '取消失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('取消失败');
+    }
+  }
+};
+// 弹出取消确认弹窗
+const confirmCancelReserve = () => {
+  ElMessageBox.confirm(
+    `确定要取消课程“${currentCourse.value.title}”的预约吗？`,
+    '取消预约确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  )
+    .then(() => {
+      handleCancelReserve();
+    })
+    .catch(() => {
+      ElMessage.info('已取消操作');
+    });
+};
+
+
 
 const handleSizeChange = (val) => {
   pageSize.value = val
@@ -563,6 +641,9 @@ const handleCurrentChange = (val) => {
 onMounted(() => {
   loadCourses()
   loadCoaches()
+  if (role.value === 'USER') {
+    checkUserReservations()
+  }
 })
 </script>
 

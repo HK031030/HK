@@ -73,6 +73,16 @@ const routes = [
         name: 'News',
         meta: { name: '新闻信息',roles: ['ADMIN', 'COACH', 'USER'] },
         component: () => import('@/views/manager/News.vue')
+      },
+      {
+        path: '/manager/logs',
+        name: 'LogsManagement',
+        component: () => import('@/views/manager/LogsManagement.vue'),
+        meta: {
+          name: '日志管理',
+          requiresAuth: true,
+          permissions: ['logs-view']
+        }
       }
     ]
   },
@@ -87,7 +97,7 @@ const router = createRouter({
 })
 
 
-// 修改路由守卫
+//修改路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
