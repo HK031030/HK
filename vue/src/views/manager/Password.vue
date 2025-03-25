@@ -3,7 +3,10 @@
     <el-card class="password-card">
       <template #header>
         <div class="card-header">
-          <span class="header-title">修改密码</span>
+          <span class="header-title">
+            <el-icon class="header-icon"><Lock /></el-icon>
+            修改密码
+          </span>
         </div>
       </template>
       
@@ -52,8 +55,14 @@
         </el-form-item>
 
         <div class="form-footer">
-          <el-button @click="resetForm" :icon="Refresh">重置</el-button>
-          <el-button type="primary" @click="submitForm" :icon="Edit">确认修改</el-button>
+          <el-button @click="resetForm">
+            <el-icon><Refresh /></el-icon>
+            重置
+          </el-button>
+          <el-button type="primary" @click="submitForm">
+            <el-icon><Edit /></el-icon>
+            确认修改
+          </el-button>
         </div>
       </el-form>
     </el-card>
@@ -152,50 +161,77 @@ const resetForm = () => {
 </script>
 
 <style scoped>
+/* 整体容器样式 */
 .password-container {
   padding: 20px;
-  display: flex;
-  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
+/* 卡片样式 */
 .password-card {
-  width: 600px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+/* 卡片标题样式 */
 .card-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ebeef5;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
   display: flex;
   align-items: center;
 }
 
-.header-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #303133;
-}
-
+/* 表单样式 */
 .password-form {
-  padding: 30px 20px;
+  padding: 30px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .form-footer {
   text-align: center;
   margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px dashed #ebeef5;
 }
 
+/* Element Plus 组件深度选择器样式 */
 :deep(.el-input__inner) {
+  height: 40px;
+  line-height: 40px;
   padding-left: 45px;
+  border-radius: 4px;
 }
 
 :deep(.el-form-item__label) {
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: 500;
   color: #606266;
 }
 
 :deep(.el-button) {
-  padding: 12px 30px;
-  margin: 0 10px;
-  font-weight: bold;
+  height: 40px;
+  padding: 0 30px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-form-item) {
@@ -203,7 +239,39 @@ const resetForm = () => {
 }
 
 :deep(.el-input__prefix) {
-  font-size: 18px;
-  left: 10px;
+  font-size: 16px;
+  left: 12px;
+}
+
+/* 输入框图标样式 */
+:deep(.el-input__prefix-icon) {
+  color: #909399;
+}
+
+/* 按钮组样式 */
+:deep(.el-button + .el-button) {
+  margin-left: 15px;
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 768px) {
+  .password-container {
+    padding: 10px;
+  }
+  
+  .password-card {
+    margin: 0 10px;
+  }
+  
+  .password-form {
+    padding: 20px;
+  }
+  
+  :deep(.el-form-item__label) {
+    float: none;
+    display: block;
+    text-align: left;
+    padding: 0 0 10px;
+  }
 }
 </style>

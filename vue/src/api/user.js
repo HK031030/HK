@@ -29,7 +29,9 @@ export function verifyAndResetPassword(data) {
     }
   })
 }
-export function getUserInfo() {
+
+// 用户相关接口
+export const getUserInfo = () => {
   return request({
     url: '/user/info',
     method: 'get'
@@ -71,3 +73,17 @@ export function updatePassword(data) {
     data: data
   });
 }
+
+// 创建 user store
+const useUserStore = () => {
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  
+  return {
+    userId: userInfo.id,
+    username: userInfo.username,
+    role: userInfo.role
+  }
+}
+
+// 添加默认导出
+export default useUserStore

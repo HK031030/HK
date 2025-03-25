@@ -65,9 +65,9 @@ export function deleteBatch(ids) {
 }
 
 // 获取课程时段
-export function getCourseSlots(courseId) {
+export function getCourseSlots(slotId) {
   return request({
-    url: `/course/${courseId}/slots`,
+    url: `/course/${slotId}/slots`,
     method: 'get'
   })
 }

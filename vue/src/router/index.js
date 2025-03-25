@@ -45,22 +45,20 @@ const routes = [
         component: () => import('@/views/manager/Password.vue') 
       },
       {
-        path: 'user',meta: { name: '用户管理' ,roles: ['ADMIN','COACH']},component: () => import('@/views/manager/User.vue')
+        path: 'user',
+        meta: { name: '用户管理' ,roles: ['ADMIN','COACH']},
+        component: () => import('@/views/manager/User.vue')
+      },
+      {
+        path: 'user/add', // 新增公告路由
+        name: 'AddUser', // 新增公告的名称
+        meta: { name: '新增公告', roles: ['ADMIN'] }, // 设置角色权限
+        component: () => import('@/views/manager/User.vue') // 引入新增公告组件
       },
       { 
         path: 'course', 
         meta: { name: '课程信息' ,roles: ['ADMIN', 'COACH', 'USER'] }, 
         component: () => import('@/views/manager/Course.vue') 
-      },
-      {
-        path: 'course-appointment', 
-        meta: { name: '课程预约审核',roles: ['ADMIN', 'COACH', 'USER'] }, 
-        component: () => import('@/views/manager/CourseAppointment.vue') 
-      },
-      {
-        path: 'course-booking',
-        meta: { name: '预约课程', roles: ['ADMIN', 'COACH', 'USER'] },
-        component: () => import('@/views/manager/ReservationList.vue')
       },
       { 
         path: 'notice', 
@@ -68,12 +66,19 @@ const routes = [
         meta: { name: '系统公告',roles: ['ADMIN', 'COACH', 'USER'] },
         component: () => import('@/views/manager/Notice.vue')
       },
+      {
+        path: 'notice/add', // 新增公告路由
+        name: 'AddNotice', // 新增公告的名称
+        meta: { name: '新增公告', roles: ['ADMIN', 'COACH'] }, // 设置角色权限
+        component: () => import('@/views/manager/Notice.vue') // 引入新增公告组件
+      },
       { 
         path: 'news', 
         name: 'News',
         meta: { name: '新闻信息',roles: ['ADMIN', 'COACH', 'USER'] },
         component: () => import('@/views/manager/News.vue')
       },
+      
       {
         path: '/manager/logs',
         name: 'LogsManagement',
@@ -83,6 +88,54 @@ const routes = [
           requiresAuth: true,
           permissions: ['logs-view']
         }
+      },
+      {
+        path: 'appointment',
+        component: () => import('@/views/manager/appointment/index.vue'),
+        redirect: _to => {
+          // 根据用户角色重定向到对应的预约页面
+          const role = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).role : '';
+          switch (role) {
+            case 'ADMIN':
+              return '/manager/appointment/admin';
+            case 'COACH':
+              return '/manager/appointment/coach';
+            case 'USER':
+              return '/manager/appointment/user';
+            default:
+              return '/manager/home';
+          }
+        },
+        meta: { 
+          title: '预约管理',
+          requiresAuth: true 
+        },
+        children: [
+          {
+            path: 'admin',
+            component: () => import('@/views/manager/appointment/AdminAppointment.vue'),
+            meta: { 
+              title: '全部预约',
+              roles: ['ADMIN']
+            }
+          },
+          {
+            path: 'coach',
+            component: () => import('@/views/manager/appointment/CoachAppointment.vue'),
+            meta: { 
+              title: '预约审核',
+              roles: ['COACH']
+            }
+          },
+          {
+            path: 'user',
+            component: () => import('@/views/manager/appointment/UserAppointment.vue'),
+            meta: { 
+              title: '我的预约',
+              roles: ['USER']
+            }
+          }
+        ]
       }
     ]
   },

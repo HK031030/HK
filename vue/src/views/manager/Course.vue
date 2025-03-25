@@ -1,18 +1,5 @@
 <template>
   <div class="course-container">
-
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="课程管理" name="courses">
-        <!-- 课程管理内容 -->
-      </el-tab-pane>
-      <el-tab-pane label="我的预约" name="reservations" v-if="role === 'USER'">
-        <ReservationList :userId="userInfo.id" />
-      </el-tab-pane>
-      <!-- <el-tab-pane label="课程预约" name="reservations" v-if="role === 'COACH' || role === 'ADMIN'">
-        <ReservationList :coachId="role === 'COACH' ? userInfo.id : null" />
-      </el-tab-pane> -->
-    </el-tabs>
-  
     <!-- 搜索栏 -->
     <div class="search-bar">
       <el-input v-model="searchForm.title" placeholder="课程名称" style="width: 200px" clearable />
@@ -35,9 +22,34 @@
 
     <!-- 课程表格 -->
     <el-table :data="courses" v-loading="loading" border stripe>
-      <el-table-column type="index" label="序号" width="60" align="center" />
-      <el-table-column prop="title" label="课程名称" min-width="150" show-overflow-tooltip />
-      <el-table-column prop="description" label="课程介绍" min-width="170" show-overflow-tooltip />
+      <el-table-column 
+    type="index" 
+    label="序号" 
+    width="60" 
+    align="center" 
+  />
+  <el-table-column 
+    prop="title" 
+    label="课程名称" 
+    min-width="150" 
+    :show-overflow-tooltip="{
+      effect: 'dark',
+      content: '', // 添加空内容
+      placement: 'top',
+      enterable: false
+    }"
+  />
+  <el-table-column 
+    prop="description" 
+    label="课程介绍" 
+    min-width="170" 
+    :show-overflow-tooltip="{
+      effect: 'dark',
+      content: '',
+      placement: 'top',
+      enterable: false
+    }"
+  />
       <el-table-column prop="type" label="课程类型" width="100" />
       <el-table-column prop="during" label="课程时长" width="80">
         <template #default="{ row }">
@@ -64,15 +76,18 @@
             @click="handleDelete(row)"
             v-if="role === 'ADMIN' || role === 'COACH'"
           />
-          <el-button
-            v-if="role === 'USER' && hasPermission('course-reserve')"
-            :type="row.isReserved ? 'danger' : 'warning'"
-            :icon="Calendar"
-            circle
-            @click="row.isReserved ? handleCancelReserve(row) : handleReserve(row)"
-            :disabled="row.remain === 0"
-          />
-          {{ row.isReserved ? '取消' : '预约' }}
+    <!-- 取消预约按钮：显示在已预约时 -->
+            <!-- 修改预约/取消按钮 -->
+<el-button
+  v-if="role === 'USER' && hasPermission('course-reserve')"
+  :type="row.status === 'RESERVED' ? 'danger' : 'warning'"
+  :icon="Calendar"
+  circle
+  @click="row.status === 'RESERVED' ? handleCancelReserve(row) : handleReserve(row)"
+  :disabled="!row.isReserved && row.remain === 0"
+>
+  {{ row.status === 'RESERVED' ? '取消' : '预约' }}
+</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -174,15 +189,16 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="reserveDialogVisible = false">取消</el-button>
-        <el-button
-          :type="isBooked ? 'danger' : 'warning'"
-          @click="isBooked ? confirmCancelReserve() : handleReserveSubmit()"
-          :loading="reserveSubmitting"
-        >
-          {{ isBooked ? '取消预约' : '立即预约' }}
-        </el-button>
-      </template>
+  <el-button @click="reserveDialogVisible = false">关闭</el-button>
+  <el-button
+    :type="currentCourse.status === 'RESERVED' ? 'danger' : 'warning'"
+    @click="handleReserveSubmit"
+    :loading="reserveSubmitting"
+  >
+    {{ currentCourse.status === 'RESERVED' ? '取消预约' : '立即预约' }}
+  </el-button>
+</template>
+  
     </el-dialog>
   </div>
 </template>
@@ -192,7 +208,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Calendar } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { getCourseList, searchCourses,addCourse, updateCourse, deleteCourse, getCourseSlots, createReservation } from '@/api/course'
-// import ReservationList from './ReservationList.vue';
+import { getUserReservations, cancelReservation } from '@/api/reservation' 
 
 const courses = ref([])
 const loading = ref(false)
@@ -204,7 +220,6 @@ const coachList = ref([])
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
 const role = ref(userInfo.value.role || '')
 
-const activeTab = ref('courses');
 const hasPermission = (permission) => {
   const permissions = {
     'ADMIN': ['course-info', 'course-info-edit'],
@@ -239,27 +254,53 @@ const loadCoaches = async () => {
     ElMessage.error('加载教练失败')
   }
 }
-// 新增方法：检查用户预约状态
+
+// 检查用户预约状态的方法
 const checkUserReservations = async () => {
   try {
-    const res = await request.get('/reservations/user', {
-      params: { userId: userInfo.value.id 
-                
-      },
-    });
-    console.log('预约状态响应:', res); // 打印完整响应
+    const res = await getUserReservations(
+      userInfo.value.id
+    );
+    
+    console.log('预约状态响应:', res);
     if (res.code === '200') {
-      const reservedCourseIds = res.data.map((reservation) => reservation.courseId);
-      courses.value.forEach((course) => {
-        course.isReserved = reservedCourseIds.includes(course.id);
-      });
+      // Check if res.data exists and is an array
+      const reservationsData = Array.isArray(res.data) ? res.data : [];
+      
+      // Using Map to store reservation status
+      const reservationMap = new Map(
+        reservationsData.map(reservation => [reservation.courseId, {
+          id: reservation.id,
+          slotId: reservation.slotId,
+          status: reservation.status
+        }])
+      );
+      
+      // Update course status
+      courses.value = courses.value.map(course => ({
+        ...course,
+        isReserved: reservationMap.has(course.id),
+        reservationId: reservationMap.get(course.id)?.id,
+        status: reservationMap.get(course.id)?.status || 'NOT_RESERVED'
+      }));
+    } else if (res.status === 'CANCELLED') {
+      // Handle the case when there's a status at the top level
+      console.log('Reservation status is cancelled');
+      // Update all courses to NOT_RESERVED state
+      courses.value = courses.value.map(course => ({
+        ...course,
+        isReserved: false,
+        reservationId: null,
+        status: 'NOT_RESERVED'
+      }));
     }
   } catch (error) {
-    console.error('获取用户预约状态失败:', error);
+    console.error('获取预约状态失败:', error);
   }
 };
-
+// 修改 loadCourses 方法，添加初始化 isReserved 字段
 const loadCourses = async () => {
+
   loading.value = true
   try {
     const params = {
@@ -281,14 +322,20 @@ const loadCourses = async () => {
         during: record.during || 30,
         startTime: record.startTime,
         endTime: record.endTime,
-        createtime: record.createtime, // 修改为 createtime
+        createdTime: record.createdTime, // 修改为 createdTime
         coachId: record.coachId, // 修改为 coachId
         coachName: record.coachName,
-        remain: record.remain || 30
+        remain: record.remain || 30,
+        status: record.status
+        
       }))
       total.value = res.data.total || 0
       if (courses.value.length === 0) {
         ElMessage.info('当前没有课程数据')
+      }
+      // 如果是用户角色，立即检查预约状态
+      if (role.value === 'USER') {
+        await checkUserReservations();
       }
     } else {
       ElMessage.error(res.msg || '加载课程列表失败')
@@ -300,8 +347,6 @@ const loadCourses = async () => {
     loading.value = false
   }
 }
-
-
 
 // 新增：搜索课程
 const handleSearch = async () => {
@@ -325,7 +370,7 @@ const handleSearch = async () => {
         during: record.during || 30,
         startTime: record.startTime,
         endTime: record.endTime,
-        createtime: record.createtime,
+        createdTime: record.createdTime,
         coachId: record.coachId,
         coachName: record.coachName,
         remain: record.remain || 30
@@ -361,7 +406,7 @@ const form = reactive({
   during: 30,
   startTime: '',
   endTime: '',
-  createtime: '', // 修改为 createtime
+  createdTime: '', // 修改为 createdTime
   coachId: null, // 修改为 coachId
   remain: 30
 })
@@ -394,7 +439,7 @@ const handleAdd = () => {
     during: 30,
     startTime: '',
     endTime: '',
-    createtime: formatTime(new Date()), // 修改为 createtime
+    createdTime: formatTime(new Date()), // 修改为 createdTime
     coachId: role.value === 'COACH' ? userInfo.value.id : null, // 修改为 coachId
     remain: 30
   })
@@ -414,7 +459,7 @@ const handleEdit = (row) => {
     during: 30,
     startTime: row.startTime,
     endTime: row.endTime,
-    createtime: row.createtime, // 修改为 createtime
+    createdTime: row.createdTime, // 修改为 createdTime
     coachId: row.coachId, // 修改为 coachId
     remain: row.remain
   })
@@ -448,7 +493,7 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitting.value = true
     if (!form.id) {
-      form.createtime = formatTime(new Date()) // 修改为 createtime
+      form.createdTime = formatTime(new Date()) // 修改为 createdTime
     }
     const submitData = {
       id: String(form.id),
@@ -458,7 +503,7 @@ const handleSubmit = async () => {
       during: 30,
       startTime: form.startTime,
       endTime: form.endTime,
-      createtime: form.createtime, // 修改为 createtime
+      createdTime: form.createdTime, // 修改为 createdTime
       coachId: parseInt(form.coachId), // 修改为 coachId
       remain: form.remain
     }
@@ -487,7 +532,11 @@ const handleSubmit = async () => {
 const reserveDialogVisible = ref(false)
 const reserveSubmitting = ref(false)
 const slotLoading = ref(false)
-const currentCourse = ref({})
+const currentCourse = ref({
+  id: null,
+  title: '',
+  status: 'RESERVED'
+})
 const timeSlots = ref([])
 const isBooked = ref(false);
 
@@ -553,80 +602,104 @@ const handleReserve = async (row) => {
 
 const handleReserveSubmit = async () => {
   try {
-    if (reserveSubmitting.value) return
-    reserveSubmitting.value = true
-    await reserveFormRef.value.validate()
+    reserveSubmitting.value = true;
+    
     const payload = {
-      courseId: reserveForm.courseId,
+      courseId: currentCourse.value.id,
       userId: userInfo.value.id,
-      slotId: reserveForm.slotId,
-      comment: reserveForm.comment, // 添加备注字段
-      createdAt: new Date().toISOString()
-    }
-    const res = await createReservation(payload)
-    if (res.code === '201') {
-      ElMessage.success('预约成功')
-      const course = courses.value.find((c) => c.id === reserveForm.courseId);
-      if (course) course.isReserved = true;
-      reserveDialogVisible.value = false;
-    } else {
-      ElMessage.error(res.message || '预约失败')
-    }
-  } catch (error) {
-    console.error('预约失败:', error)
-    if (error.response?.data?.code === 409) {
-      ElMessage.warning('您已预约该课程，请勿重复预约')
-    } else {
-      ElMessage.error('预约失败')
-    }
-  } finally {
-    reserveSubmitting.value = false
-  }
-}
-
-const handleCancelReserve = async (row) => {
-  try {
-    await ElMessageBox.confirm('确定取消预约吗？', '提示', {
-      type: 'warning',
-    });
-    const payload = {
-      courseId: row.id,
-      userId: userInfo.value.id,
+      slotId: timeSlots.value[0].id,
+      comment: reserveForm.comment || ''
+    
     };
-    const res = await cancelReservation(payload);
-    if (res.code === '200') {
-      ElMessage.success('取消预约成功');
-      row.isReserved = false; // 更新状态
-      loadCourses(); // 可选：刷新列表
+    
+    const res = await createReservation(payload);
+    if (res.code === '200' || res.code === '201') {
+      ElMessage.success('预约成功');
+      
+      // 更新课程状态
+      const courseIndex = courses.value.findIndex(c => c.id === currentCourse.value.id);
+      if (courseIndex !== -1) {
+        courses.value[courseIndex] = {
+          ...courses.value[courseIndex],
+          status: 'RESERVED',
+          isReserved: true,
+          reservationId: res.data?.id,
+          remain: Math.max(0, currentCourse.value.remain - 1)
+        };
+      }
+      // 关闭对话框
+      reserveDialogVisible.value = false;
+      // 重新检查预约状态（可选）
+      await checkUserReservations();
     } else {
-      ElMessage.error(res.message || '取消失败');
+      ElMessage.error(res.message || '预约失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('取消失败');
-    }
+    console.error('预约失败:', error);
+    ElMessage.error('预约失败');
+  } finally {
+    reserveSubmitting.value = false;
   }
 };
 // 弹出取消确认弹窗
-const confirmCancelReserve = () => {
-  ElMessageBox.confirm(
-    `确定要取消课程“${currentCourse.value.title}”的预约吗？`,
-    '取消预约确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+const confirmCancelReserve = async (row) => {
+  try {
+    currentCourse.value = row; // 设置当前课程
+    
+    await ElMessageBox.confirm(
+      `确定要取消课程"${row.title}"的预约吗？`,
+      '取消预约确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+    
+    await handleCancelReserve(row);
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消预约操作失败:', error);
     }
-  )
-    .then(() => {
-      handleCancelReserve();
-    })
-    .catch(() => {
-      ElMessage.info('已取消操作');
-    });
+  }
 };
 
+   
+const handleCancelReserve = async (row) => {
+  try {
+    if (!row.reservationId || !currentCourse.value.id) {
+      ElMessage.error('找不到预约记录');
+      return;
+    }
 
+    const res = await cancelReservation(
+      userInfo.value.id,
+      row.id
+    );
+
+    if (res.code === '200') {
+      ElMessage.success('取消预约成功');
+      
+      // 更新课程状态
+      const courseIndex = courses.value.findIndex(c => c.id === row.id);
+      if (courseIndex !== -1) {
+        courses.value[courseIndex] = {
+          ...courses.value[courseIndex],
+          status: 'CANCELLED',
+          isReserved: false,
+          remain: courses.value[courseIndex].remain + 1
+        };
+      }
+      
+      await checkUserReservations();
+    } else {
+      throw new Error(res.msg || '取消失败');
+    }
+  } catch (error) {
+    console.error('取消预约失败:', error);
+    ElMessage.error('取消预约失败');
+  }
+};
 
 const handleSizeChange = (val) => {
   pageSize.value = val
@@ -638,13 +711,12 @@ const handleCurrentChange = (val) => {
   loadCourses()
 }
 
-onMounted(() => {
-  loadCourses()
-  loadCoaches()
-  if (role.value === 'USER') {
-    checkUserReservations()
-  }
+onMounted(async () => {
+  await loadCourses();
+
+  await loadCoaches();
 })
+
 </script>
 
 <style scoped>
@@ -669,11 +741,18 @@ onMounted(() => {
   color: #606266;
 }
 
-:deep(.el-form-item__label) {
-  font-weight: bold;
+:deep(.el-table) {
+  --el-table-header-text-color: #606266;
+  --el-table-border-color: #EBEEF5;
+  --el-table-text-color: #606266;
+  --el-table-header-background-color: #F5F7FA;
 }
 
-:deep(.el-table) {
-  margin-top: 20px;
+:deep(.el-table .el-table__cell) {
+  padding: 12px 0;
+}
+
+:deep(.el-table--enable-row-hover .el-table__body tr:hover > td) {
+  background-color: #F5F7FA;
 }
 </style>

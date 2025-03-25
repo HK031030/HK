@@ -65,10 +65,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
-import { Search } from "@element-plus/icons-vue";
-import request from "@/utils/request.js";
+import { reactive, ref, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import request from "@/utils/request.js";
+import { useRoute } from 'vue-router'; // 导入 useRoute
 
 const data = reactive({
   username: null,
@@ -94,17 +94,16 @@ const data = reactive({
     ]
   },
   rows: []
-})
+});
 
-const formRef = ref()
-
-// 假设从本地存储或其他方式获取用户角色
-const role = ref(JSON.parse(localStorage.getItem('userInfo')).role || 'USER'); // 示例获取角色
+const formRef = ref();
+const role = ref(JSON.parse(localStorage.getItem('userInfo')).role || 'USER'); // 获取用户角色
 
 // 权限控制
-const canView = role.value === 'ADMIN' || role.value === 'COACH';
-const canEdit = role.value === 'ADMIN';
+const canView = computed(() => role.value === 'ADMIN' || role.value === 'COACH');
+const canEdit = computed(() => role.value === 'ADMIN');
 
+// 加载用户数据
 const load = () => {
   request.get('/user/selectPage', {
     params: {
@@ -115,47 +114,51 @@ const load = () => {
     }
   }).then(res => {
     if (res.code === '200') {
-      data.tableData = res.data.records
-      data.total = res.data.total
+      data.tableData = res.data.records;
+      data.total = res.data.total;
     } else {
-      ElMessage.error(res.msg)
+      ElMessage.error(res.msg);
     }
-  })
-}
-load()
+  });
+};
 
+// 重置筛选条件
 const reset = () => {
-  data.username = null
-  data.name = null
-  load()
-}
+  data.username = null;
+  data.name = null;
+  load();
+};
 
+// 显示新增表单
 const handleAdd = () => {
-  data.formVisible = true
-  data.form = {}
-}
+  data.formVisible = true;
+  data.form = {};
+};
 
+// 新增用户
 const add = () => {
   formRef.value.validate((valid) => {
     if (valid) {
       request.post('/user/add', data.form).then(res => {
         if (res.code === '200') {
-          data.formVisible = false
-          ElMessage.success('新增成功')
-          load()
+          data.formVisible = false;
+          ElMessage.success('新增成功');
+          load();
         } else {
-          ElMessage.error(res.msg)
+          ElMessage.error(res.msg);
         }
-      })
+      });
     }
-  })
-}
+  });
+};
 
+// 显示编辑表单
 const handleEdit = (row) => {
-  data.form = JSON.parse(JSON.stringify(row))
-  data.formVisible = true
-}
+  data.form = JSON.parse(JSON.stringify(row));
+  data.formVisible = true;
+};
 
+// 更新用户信息
 const update = () => {
   formRef.value.validate((valid) => {
     if (valid) {
@@ -170,29 +173,33 @@ const update = () => {
       });
     }
   });
-}
+};
 
+// 保存用户信息
 const save = () => {
-  data.form.id ? update() : add()
-}
+  data.form.id ? update() : add();
+};
 
+// 删除用户
 const del = (id) => {
-  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' }).then(res => {
+  ElMessageBox.confirm('删除后无法恢复，您确认删除吗？', '删除确认', { type: 'warning' }).then(() => {
     request.delete('/user/delete/' + id).then(res => {
       if (res.code === '200') {
-        ElMessage.success('删除成功')
-        load()
+        ElMessage.success('删除成功');
+        load();
       } else {
-        ElMessage.error(res.msg)
+        ElMessage.error(res.msg);
       }
-    })
-  }).catch(err => {})
-}
+    });
+  }).catch(() => {});
+};
 
+// 处理选择变化
 const handleSelectionChange = (rows) => {
-  data.rows = rows
-}
+  data.rows = rows;
+};
 
+// 批量删除
 const deleteBatch = () => {
   if (data.rows.length === 0) {
     ElMessage.warning('请选择数据');
@@ -204,26 +211,33 @@ const deleteBatch = () => {
       .then(() => {
         request.delete('/user/delete/batch', {
           data: ids
-        })
-            .then(res => {
-              if (res.code === '200') {
-                ElMessage.success('批量删除成功');
-                load();
-              } else {
-                ElMessage.error(res.msg);
-              }
-            })
-            .catch(error => {
-              ElMessage.error('删除请求失败，请稍后再试');
-            });
+        }).then(res => {
+          if (res.code === '200') {
+            ElMessage.success('批量删除成功');
+            load();
+          } else {
+            ElMessage.error(res.msg);
+          }
+        }).catch(() => {
+          ElMessage.error('删除请求失败，请稍后再试');
+        });
       })
-      .catch(err => {
+      .catch(() => {
         console.log('用户取消删除操作');
       });
-}
+};
+
+// 组件挂载时加载数据并检查路由
+const route = useRoute(); // 使用 useRoute 获取当前路由
+
+onMounted(() => {
+  load(); // 加载用户数据
+  // 检查路由名称
+  if (route.name === 'AddUser') {
+    handleAdd(); // 调用新增功能
+  }
+});
 </script>
-
-
 
 <!--<template>-->
 <!--  <div>-->

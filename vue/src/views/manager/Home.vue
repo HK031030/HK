@@ -22,28 +22,43 @@
         </el-card>
       </el-col>
     </el-row>
-    <!-- 通知和公告区域 - 所有角色共有 -->
-    <el-card class="announcement-card">
+    <!-- 公告展示卡片 -->
+    <el-card class="announcement-card" v-loading="loading">
       <template #header>
-        <div class="announcement-header">
-          <h3>系统公告</h3>
-          <el-button v-if="role === 'ADMIN' || role === 'COACH'" type="primary" size="small" @click="handleAddAnnouncement">
-            发布公告
+        <div class="card-header-with-action">
+          <span>系统公告({{announcements.length}})</span>
+          <el-button
+            v-if="role === 'ADMIN'"
+            type="primary"
+            size="small"
+            @click="$router.push('/manager/notice')"
+          >
+            管理公告
           </el-button>
         </div>
       </template>
-      <div class="announcement-list">
-        <el-empty v-if="announcements.length === 0" description="暂无公告"></el-empty>
-        <div v-else v-for="(item, index) in announcements" :key="index" class="announcement-item">
+      
+      <el-empty v-if="!announcements.length" description="暂无公告" />
+      
+      <div v-else class="announcement-list">
+        <div
+          v-for="item in announcements"
+          :key="item.id"
+          class="announcement-item"
+        >
           <div class="announcement-title">
-            <el-icon><Bell /></el-icon>
-            <span>{{ item.title }}</span>
-            <el-tag size="small" :type="item.type">{{ item.typeText }}</el-tag>
+            <el-tag size="small" :type="item.type" class="mr-2">
+              {{ item.typeText }}
+            </el-tag>
+            {{ item.title }}
           </div>
-          <div class="announcement-content">{{ item.content }}</div>
-          <div class="announcement-footer">
-            <span class="time">{{ item.time }}</span>
-            <span class="author">{{ item.author }}</span>
+          <div class="announcement-content text-gray-600">
+            {{ item.content }}
+          </div>
+          <div class="announcement-footer text-gray-400 text-sm">
+            <span>{{ item.time }}</span>
+            <el-divider direction="vertical" />
+            <span>发布人: {{ item.author }}</span>
           </div>
         </div>
       </div>
@@ -168,26 +183,57 @@
 
       <!-- 课程推荐 -->
       <el-card class="recommendation-card">
-        <template #header>
-          <span>推荐课程</span>
-        </template>
-        <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :md="8" v-for="(course, index) in recommendedCourses" :key="index">
-            <div class="course-item">
-              <img :src="course.image" alt="课程封面" class="course-image">
-              <div class="course-info">
-                <div class="course-name">{{ course.name }}</div>
-                <div class="course-desc">{{ course.description }}</div>
-                <div class="course-meta">
-                  <span><el-icon><Timer /></el-icon> {{ course.duration }}</span>
-                  <span><el-icon><User /></el-icon> {{ course.coach }}</span>
-                </div>
-                <el-button type="primary" @click="bookCourse(course)">立即预约</el-button>
-              </div>
+    <template #header>
+      <div class="card-header-with-action">
+        <span>推荐课程</span>
+        <el-button type="primary" size="small" @click="$router.push('/user/course')">
+          查看全部
+        </el-button>
+      </div>
+    </template>
+    <el-row :gutter="20">
+      <el-col 
+        v-for="course in recommendedCourses" 
+        :key="course.id" 
+        :xs="24" 
+        :sm="12" 
+        :md="8"
+      >
+        <div class="course-item">
+          <img :src="course.image" :alt="course.name" class="course-image">
+          <div class="course-info">
+            <div class="course-name">{{ course.name }}</div>
+            <div class="course-desc">{{ course.description }}</div>
+            <div class="course-meta">
+              <span>
+                <el-icon><Timer /></el-icon>
+                {{ course.duration }}
+              </span>
+              <span>
+                <el-icon><User /></el-icon>
+                {{ course.coach }}
+              </span>
+              <span>
+                <el-icon><Tickets /></el-icon>
+                剩余名额: {{ course.remain }}
+              </span>
             </div>
-          </el-col>
-        </el-row>
-      </el-card>
+            <el-button 
+              type="primary" 
+              :disabled="!course.remain"
+              @click="bookCourse(course)"
+            >
+              {{ course.remain ? '立即预约' : '名额已满' }}
+            </el-button>
+          </div>
+        </div>
+      </el-col>
+      <el-empty 
+        v-if="!recommendedCourses.length" 
+        description="暂无推荐课程" 
+      />
+    </el-row>
+  </el-card>
 
       <!-- 我的预约 -->
       <el-card class="my-appointment-card">
@@ -222,32 +268,50 @@
     </div>
 
     <!-- 悬浮 3D 汽车按钮区域 -->
-    <div class="floating-car" @click="navigateByRole">
-      <object type="image/svg+xml" data="/assets/realistic-car.svg" class="car-shape"></object>
-      <div class="car-tooltip">{{carButtonText}}</div>
-    </div>
-
+    <!-- 修改悬浮汽车的模板 -->
+<div 
+  class="floating-car" 
+  @mousedown.prevent="handleDragStart"
+  :style="{
+    position: 'fixed',
+    left: `${dragPosition.x}px`,
+    top: `${dragPosition.y}px`,
+    cursor: isDragging ? 'grabbing' : 'grab',
+    userSelect: 'none',
+    zIndex: isDragging ? 1000 : 999  // 调整拖拽时和非拖拽时的层级
+  }"
+>
+  <img 
+    src="/assets/realistic-car.svg" 
+    class="car-shape" 
+    draggable="false"
+    @click="!isDragging && navigateByRole"
+  />
+  <div 
+    class="car-tooltip" 
+    :style="{ 
+      zIndex: 1001,
+      opacity: isDragging ? 0 : undefined 
+    }"
+  >
+    {{carButtonText}}
+  </div>
+</div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-// import { 
-//   User, Document, Van, Calendar, Bell, Setting, Truck, 
-//   VideoCamera, Files, Timer, OfficeBuilding, List, Plus,
-//   Refresh, Warning, Check, Promotion, Location, UserFilled
-// } from '@element-plus/icons-vue';
+
 import CountTo from 'vue3-count-to';
+import { getNoticeList } from '@/api/notice'
+import { getCourseList } from '@/api/course' 
 
 const router = useRouter();
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
 const role = ref(userInfo.value.role || 'USER');
-const loading = ref({
-  courses: false,
-  pending: false,
-  appointments: false
-});
+const loading = ref(false);
 
 // 根据角色显示不同的统计数据
 const statisticsData = ref({
@@ -317,31 +381,73 @@ const systemHealth = ref({
 const adminQuickActions = ref([
   { name: '添加新用户', icon: 'User', route: '/manager/user/add' },
   { name: '添加新课程', icon: 'Document', route: '/manager/course' },
-  { name: '添加新车辆', icon: 'Van', route: '/manager/vehicle/add' },
+  { name: '查看预约', icon: 'Van', route: '/manager/appointment/admin'},
   { name: '发布公告', icon: 'Bell', route: '/manager/notice/add' },
   { name: '查看日志', icon: 'Files', route: '/manager/logs' },
-  { name: '系统设置', icon: 'Setting', route: '/manager/settings' }
 ]);
 
+
 // 公告数据
-const announcements = ref([
-  {
-    title: '系统更新通知',
-    content: '驾校预约系统将于本周五晚上22:00-24:00进行系统升级，期间系统将暂停服务，请各位用户提前做好安排。',
-    time: '2025-03-10 10:30',
-    author: '系统管理员',
-    type: 'warning',
-    typeText: '重要'
-  },
-  {
-    title: '科目二考试安排',
-    content: '3月20日将组织科目二集中考试，请已完成培训的学员做好准备，考试地点为市交通局考试中心。',
-    time: '2025-03-09 14:15',
-    author: '张教练',
-    type: 'success',
-    typeText: '考试'
+const announcements = ref([])
+const params = ref({
+  pageNum: 1,
+  pageSize: 5,
+  title: ''
+});
+
+// 获取公告列表
+const loadNotices = async () => {
+  try {
+    loading.value = true;
+    console.log('开始加载公告...');
+    const res = await getNoticeList({
+      pageNum: params.value.pageNum,  // 使用 .value 访问 ref 值
+      pageSize: params.value.pageSize, // 使用 .value 访问 ref 值
+      title: params.value.title 
+    });
+    console.log('公告接口响应:', res);
+    
+    if (res.code === '200') {
+      // 只过滤出重要公告（top 值为 1 的公告）
+      announcements.value = res.data.records
+        .filter(notice => notice.top === 1|| notice.top === 2)  // 只保留重要公告
+        .map(notice => ({
+          id: notice.id,
+          title: notice.title,
+          content: notice.content,
+          time: notice.time,
+          username: notice.username,
+          type: getNoticeType(notice.top),
+          typeText: getNoticeTypeText(notice.top)
+        }));
+      console.log('处理后的重要公告数据:', announcements.value);
+    }
+  } catch (error) {
+    console.error('获取公告列表失败:', error);
+  } finally {
+    loading.value = false;
   }
-]);
+};
+
+// 修改类型判断方法
+const getNoticeType = (top) => {
+  switch (Number(top)) {
+    case 1: return 'danger';    // top=1 表示最重要
+    case 2: return 'warning';   // top=2 表示次重要
+    case 0: return 'info';      // top=0 表示普通
+    default: return 'info';     // 默认返回普通
+  }
+};
+
+// 修改类型文本方法
+const getNoticeTypeText = (top) => {
+  switch (top) {
+    case 1: return '重要';
+    case 2: return '通知';
+    case 0: return '普通';
+    default: return '普通';
+  }
+};
 
 // 教练今日课程数据
 const todayCourses = ref([
@@ -393,32 +499,42 @@ const learningProgress = ref([
 ]);
 
 // 学员推荐课程
-const recommendedCourses = ref([
-  {
-    id: 1,
-    name: '科目二集中特训班',
-    description: '针对倒车入库、侧方停车等难点进行集中训练',
-    duration: '3天',
-    coach: '王教练',
-    image: '/assets/imgs/course1.jpg'
-  },
-  {
-    id: 2,
-    name: '夜间驾驶实战班',
-    description: '掌握夜间行车技巧与应急处理能力',
-    duration: '2天',
-    coach: '李教练',
-    image: '/assets/imgs/course2.jpg'
-  },
-  {
-    id: 3,
-    name: '科目三路况应对班',
-    description: '应对复杂路况和突发情况处理技巧',
-    duration: '2天',
-    coach: '张教练',
-    image: '/assets/imgs/course3.jpg'
+const recommendedCourses = ref([]);
+
+// 添加获取推荐课程的方法
+const loadRecommendedCourses = async () => {
+  try {
+    const res = await getCourseList({
+      pageNum: 1,
+      pageSize: 3,  // 限制只获取3个课程
+      title: '',
+      type: '',
+      // 可以添加排序条件
+      sortBy: 'createdTime',
+      sortOrder: 'desc'
+    });
+    
+    if (res.code === '200') {
+      recommendedCourses.value = (res.data.records || [])
+        .filter(course => course.remain > 0)  // 只显示还有剩余名额的课程
+        .map(course => ({
+          id: course.id,
+          name: course.title,
+          description: course.description,
+          duration: `${course.during || 0}课时`,
+          coach: course.coachName,
+          type: course.type,
+          remain: course.remain,
+          startTime: course.startTime,
+          image: course.image || `/assets/imgs/course${(course.id % 3) + 1}.jpg`
+        }));
+      console.log('处理后的推荐课程:', recommendedCourses.value);
+    }
+  } catch (error) {
+    console.error('加载推荐课程失败:', error);
   }
-]);
+};
+
 
 // 学员的预约记录
 const myAppointments = ref([
@@ -449,14 +565,24 @@ const carButtonText = computed(() => {
   }
 });
 
-// 根据角色导航到不同页面
+// 修改导航方法
 const navigateByRole = () => {
-  if (role.value === 'ADMIN') {
-    window.location.href = '/market-analysis/ershouche/index.html';
-  } else if (role.value === 'COACH') {
-    router.push('/coach/resources');
-  } else {
-    router.push('/user/learning-materials');
+  if (!isDragging.value) {  // 确保不是在拖拽状态
+    try {
+      if (role.value === 'ADMIN') {
+        // 使用路由导航而不是直接修改 location
+        router.push('/market-analysis/ershouche/index');
+        // 或者如果必须使用完整URL：
+        // window.open('/market-analysis/ershouche/index.html', '_blank');
+      } else if (role.value === 'COACH') {
+        router.push('/coach/resources');
+      } else {
+        router.push('/market-analysis/ershouche/price');
+      }
+    } catch (error) {
+      console.error('导航失败:', error);
+      ElMessage.error('页面跳转失败，请稍后重试');
+    }
   }
 };
 
@@ -532,7 +658,7 @@ const handleQuickAction = (route) => {
 };
 
 const handleAddAnnouncement = () => {
-  router.push('/manager/notice/add');
+  router.push('/manager/notice');
 };
 
 const fixLogsSystem = () => {
@@ -549,8 +675,62 @@ const fetchData = async () => {
   // 目前使用模拟数据演示
 };
 
+// 在 script setup 中添加拖拽相关的状态和方法
+const isDragging = ref(false);
+const dragPosition = ref({ x: 50, y: 30 }); // 初始位置
+const dragOffset = ref({ x: 0, y: 0 });
+
+// 添加拖拽处理方法
+const handleDragStart = (e) => {
+  e.preventDefault();
+  isDragging.value = true;
+  // 记录鼠标按下时的偏移量
+  dragOffset.value = {
+    x: e.clientX - dragPosition.value.x,
+    y: e.clientY - dragPosition.value.y
+  };
+  // 添加事件监听器
+  document.addEventListener('mousemove', handleDragMove);
+  document.addEventListener('mouseup', handleDragEnd);
+};
+
+const handleDragMove = (e) => {
+  if (!isDragging.value) return;
+  
+  // 计算新位置
+  const newX = e.clientX - dragOffset.value.x;
+  const newY = e.clientY - dragOffset.value.y;
+  
+  // 限制边界
+  const maxX = window.innerWidth - 150; // 汽车宽度
+  const maxY = window.innerHeight - 90; // 汽车高度
+  
+  dragPosition.value = {
+    x: Math.min(Math.max(0, newX), maxX),
+    y: Math.min(Math.max(0, newY), maxY)
+  };
+};
+
+const savePosition = () => {
+  localStorage.setItem('floatingCarPosition', JSON.stringify(dragPosition.value));
+};
+
+// 在 handleDragEnd 中添加保存
+const handleDragEnd = () => {
+  isDragging.value = false;
+  document.removeEventListener('mousemove', handleDragMove);
+  document.removeEventListener('mouseup', handleDragEnd);
+  savePosition(); // 保存位置
+};
+
 onMounted(() => {
+  const savedPosition = localStorage.getItem('floatingCarPosition');
+  if (savedPosition) {
+    dragPosition.value = JSON.parse(savedPosition);
+  }
+  loadNotices() 
   fetchData();
+  loadRecommendedCourses();
 });
 </script>
 
@@ -876,57 +1056,58 @@ onMounted(() => {
   margin-right: 5px;
 }
 
-/* 悬浮汽车按钮样式 */
+/* 修改悬浮汽车的样式 */
 .floating-car {
-  position: fixed;
-  bottom: 30px;
-  right: 50px;
-  width: 250px;
-  height: 150px;
+  width: 150px;
+  height: 90px;
+  transition: transform 0.3s;
+  touch-action: none;
   cursor: pointer;
-  z-index: 999;
-  transition: all 0.3s;
+  
+  .car-tooltip {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 1001;
+  }
+
+  &:hover:not(.dragging) .car-tooltip {
+    opacity: 1;
+  }
+
+  .car-shape {
+    width: 100%;
+    height: 100%;
+    cursor: inherit;
+    transition: transform 0.3s;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
 }
 
-.floating-car:hover {
-  transform: scale(1.3);
-}
-
-.floating-car:hover .car-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-.car-shape {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-}
-
-.car-tooltip {
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background-color: #409EFF;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: all 0.3s;
-}
-
-.car-tooltip:after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #409EFF transparent transparent transparent;
+/* 添加拖拽状态类 */
+.floating-car.dragging {
+  cursor: grabbing;
+  
+  .car-tooltip {
+    opacity: 0;
+  }
+  
+  .car-shape {
+    transform: none;
+  }
 }
 
 /* 响应式调整 */

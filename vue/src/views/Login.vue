@@ -234,8 +234,18 @@ const handleForgetPass = () => {
 :deep(.char) {
   opacity: 0;
   display: inline-block;
-  animation: typeAndFade 8s infinite; /* 总时长 8 秒，无限循环 */
+  animation: typeAndFade 8s infinite; /* 组合动画 */
   margin-right: 10px; /* 字符间距 */
+  color: #fff; /* 默认颜色 */
+  font-size: inherit; /* 保持字体一致 */
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+:deep(.char:nth-child(odd)) {
+  animation: typeAndFade 8s infinite, wave 2s ease-in-out infinite, pulse 2s infinite; /* 奇数字符加入脉冲效果 */
+}
+
+:deep(.char:nth-child(even)) {
+  animation: typeAndFade 8s infinite, wave 2s ease-in-out infinite, breathing 2s infinite; /* 偶数字符加入呼吸效果 */
 }
 
 @keyframes typeAndFade {
@@ -255,6 +265,45 @@ const handleForgetPass = () => {
     opacity: 0; /* 保持隐藏，直到循环开始 */
   }
 }
+/* 波浪效果 */
+@keyframes wave {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 呼吸效果（颜色渐变） */
+@keyframes breathing {
+  0% {
+    color: #ff7f50;
+  }
+  50% {
+    color: #87cefa;
+  }
+  100% {
+    color: #ff7f50;
+  }
+}
+
+/* 脉冲效果（颜色渐变） */
+@keyframes pulse {
+  0% {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+  }
+}
+
 
 .title {
   margin: 0px auto 30px auto;

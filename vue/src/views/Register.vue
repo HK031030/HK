@@ -91,7 +91,7 @@
       </el-form>
     </div>
     <div class="el-login-footer">
-      <span>Copyright © 2025 驾校管理系统</span>
+      <span>启航驾校</span>
     </div>
   </div>
 </template>

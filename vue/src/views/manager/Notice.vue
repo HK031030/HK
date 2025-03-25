@@ -102,6 +102,7 @@
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getNoticeList, addNotice, updateNotice, deleteNotice, batchDeleteNotice, updateStatus } from '@/api/notice';
+import { useRoute } from 'vue-router'; // 确保导入 useRoute
 
 export default {
   name: "Notice",
@@ -135,15 +136,20 @@ export default {
     // 过滤后的表格数据
     filteredTableData() {
       if (this.role === 'USER') {
-        // USER 只能看到公开的公告
         return this.tableData.filter(item => item.open);
       }
-      // ADMIN 和 COACH 可以看到所有公告
       return this.tableData;
     }
   },
   created() {
     this.load();
+  },
+  mounted() {
+    const route = useRoute(); // 使用 useRoute 获取当前路由
+    // 检查路由名称
+    if (route.name === 'AddNotice') {
+      this.handleAdd(); // 调用新增功能
+    }
   },
   methods: {
     // 权限检查函数
@@ -156,14 +162,12 @@ export default {
       return permissions[this.role]?.includes(permission) || false;
     },
 
-    // 检查是否可以编辑公告（COACH 只能编辑自己发布的公告）
     canEditNotice(row) {
       if (this.role === 'ADMIN') return true;
       if (this.role === 'COACH') return row.user === this.userInfo.username;
       return false;
     },
 
-    // 修改公开状态
     async changeOpen(row) {
       if (!this.hasPermission('notice-status')) {
         ElMessage.warning('您无权修改公开状态');
@@ -174,7 +178,7 @@ export default {
         const res = await updateStatus(row.id, row.open);
         if (res.code === '200') {
           ElMessage.success('状态更新成功');
-          this.load(this.pageNum); // 刷新数据以更新过滤结果
+          this.load(this.pageNum);
         } else {
           row.open = !row.open; // 还原状态
           ElMessage.error(res.msg || '状态更新失败');
@@ -185,7 +189,6 @@ export default {
       }
     },
 
-    // 批量删除
     async delBatch() {
       if (!this.hasPermission('notice-delete')) {
         ElMessage.warning('您无权批量删除公告');
@@ -248,10 +251,10 @@ export default {
         ElMessage.warning('您无权新增公告');
         return;
       }
-      this.form = { 
-        user: this.userInfo.username || '未知用户', // 默认发布人为当前用户
-        time: new Date().toISOString().slice(0, 19).replace('T', ' '), // 当前时间
-        open: false // 默认不公开
+      this.form = {
+        user: this.userInfo.username || '未知用户',
+        time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        open: false
       };
       this.fromVisible = true;
     },
