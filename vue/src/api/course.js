@@ -10,7 +10,17 @@ export function getCourseList(params) {
     params
   })
 }
-
+// 获取教练课程列表
+export function getCoachCourses(params) {
+  return request({
+    url: '/course/selectPage',
+    method: 'get',
+    params: {
+      ...params,
+      coachId: localStorage.getItem('userId') // 从本地存储获取当前登录教练ID
+    }
+  })
+}
 // 新增：搜索课程
 export function searchCourses(params) {
   console.log('searchCourses 请求参数:', params)

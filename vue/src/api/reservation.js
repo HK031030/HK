@@ -2,9 +2,16 @@ import request from '@/utils/request'
 
 export const getReservationList = (params) => {
   return request({
-    url: '/reservations',
+    url: '/reservations/selectPage',
     method: 'get',
     params
+  });
+};
+
+export const getCoaches = () => {
+  return request({
+    url: '/reservations/coach',
+    method: 'get',
   });
 };
 
@@ -16,6 +23,17 @@ export function getUserReservations(userId) {
     params: { userId }
   })
 }
+
+
+// 获取用户预约状态
+export function getUserReservations_List(params) {
+  return request({
+    url: '/reservations/selectUserPage',
+    method: 'get',
+    params
+  })
+}
+
 
 // 创建预约
 export function createReservation(data) {
@@ -35,5 +53,12 @@ export function cancelReservation(userId, slotId) {
       userId,
       slotId
     }
+  })
+}
+export function getUserReservations_List_Coach(params) {
+  return request({
+    url: '/reservations/selectCoachPage',
+    method: 'get',
+    params
   })
 }

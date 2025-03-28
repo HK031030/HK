@@ -163,75 +163,137 @@ const resetForm = () => {
 <style scoped>
 /* 整体容器样式 */
 .password-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  margin: 0;
+  padding: 0;
+  min-height: calc(100vh - 60px);
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: url('@/assets/imgs/person.jpg') no-repeat center center;
+  background-size: cover;
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
-
 /* 卡片样式 */
 .password-card {
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  width: 800px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 卡片悬浮效果 */
+.password-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* 卡片标题样式 */
 .card-header {
-  display: flex;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background-color: #f8f9fa;
-  border-radius: 8px 8px 0 0;
+  padding: 20px;
+  background: linear-gradient(90deg, 
+    rgba(64, 158, 255, 0.9),
+    rgba(54, 207, 201, 0.9)
+  );
+  backdrop-filter: blur(8px);
+  color: #fff;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #fff;
+  border-radius: 2px;
 }
 
 .header-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 /* 表单样式 */
 .password-form {
-  padding: 30px;
-  max-width: 600px;
-  margin: 0 auto;
+  padding: 40px;
+  background: rgba(249, 251, 253, 0.75);
+  backdrop-filter: blur(5px);
+  border-radius: 0 0 16px 16px;
 }
 
+.password-form::before {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  background: #409eff;
+  margin: 0 auto 30px;
+  border-radius: 1px;
+}
+
+/* 表单底部样式 */
 .form-footer {
   text-align: center;
   margin-top: 40px;
   padding-top: 20px;
-  border-top: 1px dashed #ebeef5;
+  border-top: 1px dashed rgba(64, 158, 255, 0.2);
 }
 
 /* Element Plus 组件深度选择器样式 */
-:deep(.el-input__inner) {
-  height: 40px;
-  line-height: 40px;
-  padding-left: 45px;
-  border-radius: 4px;
+:deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+  border-radius: 10px;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-form-item__label) {
-  font-size: 14px;
-  font-weight: 500;
-  color: #606266;
+  font-weight: 600;
+  color: #303133;
+  font-size: 16px;
 }
 
 :deep(.el-button) {
   height: 40px;
   padding: 0 30px;
   font-size: 14px;
-  font-weight: 500;
-  border-radius: 4px;
-  transition: all 0.3s;
+  font-weight: 600;
+  border-radius: 25px;
+  transition: all 0.3s ease;
 }
 
 :deep(.el-button:hover) {
   transform: translateY(-2px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 16px rgba(64, 158, 255, 0.4);
+}
+
+:deep(.el-button + .el-button) {
+  margin-left: 20px;
 }
 
 :deep(.el-form-item) {
@@ -243,23 +305,19 @@ const resetForm = () => {
   left: 12px;
 }
 
-/* 输入框图标样式 */
 :deep(.el-input__prefix-icon) {
-  color: #909399;
-}
-
-/* 按钮组样式 */
-:deep(.el-button + .el-button) {
-  margin-left: 15px;
+  color: #409eff;
+  transition: all 0.3s ease;
 }
 
 /* 响应式布局 */
 @media screen and (max-width: 768px) {
   .password-container {
-    padding: 10px;
+    padding: 20px;
   }
   
   .password-card {
+    width: 100%;
     margin: 0 10px;
   }
   
@@ -272,6 +330,16 @@ const resetForm = () => {
     display: block;
     text-align: left;
     padding: 0 0 10px;
+  }
+  
+  .form-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  :deep(.el-button + .el-button) {
+    margin-left: 0;
+    margin-top: 10px;
   }
 }
 </style>

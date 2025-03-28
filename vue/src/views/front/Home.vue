@@ -1,5 +1,6 @@
 <template>
   <div class="home-container">
+    <FloatingParticles />
     <!-- 3D 轮播图 -->
     <div class="banner-container">
       <div class="light-effects"></div>
@@ -90,8 +91,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-
-
+import FloatingParticles from './FloatingParticles.vue'
 import banner1 from '@/assets/imgs/banner1.jpg'
 import banner2 from '@/assets/imgs/banner2.jpg'
 import banner3 from '@/assets/imgs/banner3.jpg'

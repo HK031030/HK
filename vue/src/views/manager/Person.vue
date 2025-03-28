@@ -147,7 +147,7 @@ const handleAvatarSuccess = (response) => {
   console.log('上传成功:', response);
  
   if (response.code === '200') {
-    const fileUrl = response.data.replace('http://192.168.43.63:8080', import.meta.env.VITE_BASE_URL);
+    const fileUrl = response.data.replace('http://192.168.110.93:8080', import.meta.env.VITE_BASE_URL);
     user.value.avatar = fileUrl;    // 更新 avatar
     ElMessage.success('头像上传成功');
     localStorage.setItem('userInfo', JSON.stringify(user.value));
@@ -184,40 +184,52 @@ const beforeAvatarUpload = (file) => {
 
 <style scoped>
 .person-container {
-  padding: 40px;
+  margin: 0;
+  padding: 0;
+  min-height: calc(100vh - 60px);
+  height: 100%;
   display: flex;
   justify-content: center;
-  /* 添加背景图片 */
-  background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+  align-items: center;
+  background: url('@/assets/imgs/person.jpg') no-repeat center center;
   background-size: cover;
-  /* 添加渐变遮罩，使内容更清晰 */
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
-  min-height: 100vh;
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .person-card {
   width: 900px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.95); /* 半透明背景，增加层次感 */
+  background: rgba(255, 255, 255, 0.85); /* 半透明背景，增加层次感 */
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15); /* 更强的阴影 */
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2); /* 微妙边框 */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* 微妙边框 */
 }
 
+/* 添加过渡动画 */
 .person-card:hover {
-  transform: translateY(-8px); /* 悬浮效果更明显 */
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2); /* 悬浮时阴影增强 */
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.9); /* 悬浮时稍微不透明 */
 }
 
 .card-header {
   padding: 20px;
-  background: linear-gradient(90deg, #409eff, #36cfc9); /* 渐变头部 */
+  background: linear-gradient(90deg, 
+    rgba(64, 158, 255, 0.9), /* 降低头部渐变透明度 */
+    rgba(54, 207, 201, 0.9)
+  );
+  backdrop-filter: blur(8px);
   color: #fff;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
+
 
 /* 添加头部装饰线 */
 .card-header::after {
@@ -241,7 +253,8 @@ const beforeAvatarUpload = (file) => {
 
 .person-form {
   padding: 40px;
-  background: linear-gradient(135deg, #f9fbfd 0%, #eef2f7 100%); /* 表单区域渐变背景 */
+  background: rgba(249, 251, 253, 0.75); /* 降低表单区域透明度 */
+  backdrop-filter: blur(5px);
   border-radius: 0 0 16px 16px;
 }
 
@@ -253,18 +266,8 @@ const beforeAvatarUpload = (file) => {
 
 /* 上传头像区域优化 */
 .avatar-uploader .el-upload {
-  border: 3px dashed #dcdfe6;
-  border-radius: 50%;
-  width: 200px; /* 稍大一点 */
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  background: #fff;
-  position: relative;
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
 }
 
 .avatar-uploader .el-upload:hover {

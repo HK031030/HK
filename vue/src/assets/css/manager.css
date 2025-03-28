@@ -9,6 +9,7 @@
     display: flex;
     align-items: center;
     box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
+    transition: all 0.3s ease-in-out;
 }
 
 .manager-header-left {
@@ -40,6 +41,7 @@
     width: 200px;
     box-shadow: 0 0 6px rgba(0, 21, 41, .33);
     min-height: calc(100vh - 60px);
+    transition: all 0.3s ease-in-out;
 }
 
 .manager-main-right {
@@ -47,6 +49,7 @@
     width: 0;
     background-color: #f8f8ff;
     padding: 10px;
+    transition: all 0.3s ease-in-out;
 }
 
 
@@ -91,4 +94,21 @@
 }
 :deep(.el-breadcrumb__separator) {
     color: white !important;
+}
+
+/* 监控页面特殊样式 */
+.monitor-mode .manager-header,
+.monitor-mode .manager-main-left {
+    display: none !important;
+}
+
+.monitor-mode .manager-main-right {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+.monitor-mode {
+    background-color: transparent;
 }

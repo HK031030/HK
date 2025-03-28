@@ -27,6 +27,13 @@ export function updateNotice(data) {
   });
 }
 
+export function updateTopStatus(id, top) {
+  return request({
+    url: '/notice/top',
+    method: 'put',
+    data: { id, top }
+  })
+}
 // 删除公告
 export function deleteNotice(id) {
   return request({

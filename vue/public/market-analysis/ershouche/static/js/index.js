@@ -382,12 +382,6 @@ function line2() {
 line2();
 
 
-
-
-
-
-
-
 // 初始化两个图表，确保只创建一次
 var myChart1 = echarts.init(document.getElementById('pieChart1'));
 var myChart2 = echarts.init(document.getElementById('pieChart2'));

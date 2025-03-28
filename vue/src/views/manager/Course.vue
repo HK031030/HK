@@ -76,13 +76,15 @@
             @click="handleDelete(row)"
             v-if="role === 'ADMIN' || role === 'COACH'"
           />
-    <!-- 取消预约按钮：显示在已预约时 -->
+
             <!-- 修改预约/取消按钮 -->
 <el-button
   v-if="role === 'USER' && hasPermission('course-reserve')"
   :type="row.status === 'RESERVED' ? 'danger' : 'warning'"
   :icon="Calendar"
-  circle
+  size="small"
+  style="width: 84px"
+  
   @click="row.status === 'RESERVED' ? handleCancelReserve(row) : handleReserve(row)"
   :disabled="!row.isReserved && row.remain === 0"
 >
@@ -209,6 +211,8 @@ import { Search, Plus, Edit, Delete, Calendar } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { getCourseList, searchCourses,addCourse, updateCourse, deleteCourse, getCourseSlots, createReservation } from '@/api/course'
 import { getUserReservations, cancelReservation } from '@/api/reservation' 
+import { useRoute } from 'vue-router'; // 确保导入 useRoute
+import { debounce } from 'lodash-es'  
 
 const courses = ref([])
 const loading = ref(false)
@@ -553,6 +557,7 @@ const reserveRules = {
 const reserveFormRef = ref(null);
 
 const handleReserve = async (row) => {
+  
   if (role.value !== 'USER') {
     ElMessage.warning('只有用户可以进行预约操作')
     return
@@ -711,10 +716,17 @@ const handleCurrentChange = (val) => {
   loadCourses()
 }
 
+// 组件挂载时加载数据并检查路由
+const route = useRoute(); // 使用 useRoute 获取当前路由
+
 onMounted(async () => {
   await loadCourses();
 
   await loadCoaches();
+
+  if (route.name === 'Addcourse') {
+    handleAdd(); // 调用新增功能
+  }
 })
 
 </script>
@@ -754,5 +766,32 @@ onMounted(async () => {
 
 :deep(.el-table--enable-row-hover .el-table__body tr:hover > td) {
   background-color: #F5F7FA;
+}
+:deep(.el-button.el-button--small) {
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+:deep(.el-button .el-icon) {
+  font-size: 14px;
+}
+
+:deep(.el-button span) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 优化表格操作列的布局 */
+:deep(.el-table .el-table__cell:last-child) {
+  .cell {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
 }
 </style>

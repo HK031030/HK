@@ -58,47 +58,20 @@
           <div class="announcement-footer text-gray-400 text-sm">
             <span>{{ item.time }}</span>
             <el-divider direction="vertical" />
-            <span>发布人: {{ item.author }}</span>
+            <span>发布人: {{ item.username }}</span>
           </div>
         </div>
       </div>
     </el-card>
     <!-- 管理员专属区域 -->
     <div v-if="role === 'ADMIN'">
-      <!-- 系统监控区域 -->
-      <div class="monitoring-section">
-        <h2>系统状态监控</h2>
-        <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :md="8">
-            <el-card class="monitor-card">
-              <div class="monitor-title">服务器状态</div>
-              <div class="monitor-value" :class="{ 'healthy': systemHealth.server }">{{ systemHealth.server ? '正常' : '异常' }}</div>
-            </el-card>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8">
-            <el-card class="monitor-card">
-              <div class="monitor-title">数据库连接</div>
-              <div class="monitor-value" :class="{ 'healthy': systemHealth.database }">{{ systemHealth.database ? '正常' : '异常' }}</div>
-            </el-card>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8">
-            <el-card class="monitor-card">
-              <div class="monitor-title">日志处理模块</div>
-              <div class="monitor-value" :class="{ 'healthy': systemHealth.logs }">{{ systemHealth.logs ? '正常' : '异常' }}</div>
-              <el-button v-if="!systemHealth.logs" type="danger" size="small" class="fix-button" @click="fixLogsSystem">
-                修复
-              </el-button>
-            </el-card>
-          </el-col>
-        </el-row>
-      </div>
 
       <!-- 管理员快捷操作区域 -->
-      <el-row :gutter="20" class="quick-actions">
+      <el-row :gutter="25" class="quick-actions">
         <el-col :span="24">
           <h2>快捷操作</h2>
         </el-col>
-        <el-col :xs="12" :sm="8" :md="6" v-for="(action, index) in adminQuickActions" :key="index">
+        <el-col :xs="12" :sm="8" :md="4" v-for="(action, index) in adminQuickActions" :key="index">
           <el-card class="action-card" shadow="hover" @click="handleQuickAction(action.route)">
             <el-icon :size="30" class="action-icon">
               <component :is="action.icon"></component>
@@ -111,192 +84,179 @@
 
     <!-- 教练专属区域 -->
     <div v-if="role === 'COACH'">
-      <!-- 今日课程安排 -->
-      <el-card class="schedule-card">
-        <template #header>
-          <div class="card-header-with-action">
-            <span>今日课程安排</span>
-            <el-button type="primary" size="small" @click="viewAllSchedule">查看全部</el-button>
-          </div>
-        </template>
-        <el-table :data="todayCourses" style="width: 100%" v-loading="loading.courses">
-          <el-table-column prop="time" label="时间" width="180" />
-          <el-table-column prop="courseName" label="课程名称" />
-          <el-table-column prop="studentCount" label="学员人数" width="100" />
-          <el-table-column prop="location" label="地点" />
-          <el-table-column label="操作" width="150">
-            <template #default="scope">
-              <el-button size="small" @click="viewCourseDetail(scope.row)">详情</el-button>
-              <el-button size="small" type="primary" @click="startCourse(scope.row)">开始</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-
-      <!-- 待审核预约 -->
-      <el-card class="pending-card">
-        <template #header>
-          <div class="card-header-with-action">
-            <span>待审核预约</span>
-            <el-button type="primary" size="small" @click="viewAllPending">查看全部</el-button>
-          </div>
-        </template>
-        <el-table :data="pendingAppointments" style="width: 100%" v-loading="loading.pending">
-          <el-table-column prop="studentName" label="学员姓名" />
-          <el-table-column prop="courseName" label="课程名称" />
-          <el-table-column prop="appointmentTime" label="预约时间" width="180" />
-          <el-table-column label="操作" width="200">
-            <template #default="scope">
-              <el-button size="small" type="success" @click="approveAppointment(scope.row)">通过</el-button>
-              <el-button size="small" type="danger" @click="rejectAppointment(scope.row)">拒绝</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-    </div>
-
-    <!-- 用户/学员专属区域 -->
-    <div v-if="role === 'USER'">
-      <!-- 我的学习进度 -->
-      <el-card class="progress-card">
-        <template #header>
-          <span>我的学习进度</span>
-        </template>
-        <div class="progress-container">
-          <div class="progress-item" v-for="(item, index) in learningProgress" :key="index">
-            <div class="progress-stage">
-              <div :class="['stage-icon', { 'completed': item.completed }]">{{ index + 1 }}</div>
-              <div class="stage-line" v-if="index < learningProgress.length - 1"></div>
-            </div>
-            <div class="stage-info">
-              <div class="stage-name">{{ item.name }}</div>
-              <div class="stage-status">{{ item.completed ? '已完成' : '进行中' }}</div>
-              <el-progress 
-                :percentage="item.percentage" 
-                :status="item.completed ? 'success' : ''" 
-                :stroke-width="15"
-              ></el-progress>
-            </div>
-          </div>
+    <el-card class="schedule-card">
+      <template #header>
+        <div class="card-header">
+          <span class="title">近期课程安排</span>
+          <el-button type="primary" link @click="viewAllCourses">查看全部</el-button>
         </div>
-      </el-card>
+      </template>
 
-      <!-- 课程推荐 -->
-      <el-card class="recommendation-card">
-    <template #header>
-      <div class="card-header-with-action">
-        <span>推荐课程</span>
-        <el-button type="primary" size="small" @click="$router.push('/user/course')">
-          查看全部
-        </el-button>
-      </div>
-    </template>
-    <el-row :gutter="20">
+      <el-table 
+        :data="todayCourses" 
+        v-loading="loading.courses"
+        style="width: 100%"
+      >
+        <el-table-column 
+          prop="startTime" 
+          label="开始时间" 
+          width="160"
+          :formatter="formatDateTime"
+        />
+        <el-table-column 
+          prop="title" 
+          label="课程名称"
+          show-overflow-tooltip 
+        />
+        <el-table-column 
+          label="学员人数" 
+          width="100"
+        >
+          <template #default="{ row }">
+            {{ row.currentCount }}/{{ row.maxCount }}
+          </template>
+        </el-table-column>
+        <el-table-column 
+          label="状态" 
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column 
+          label="操作" 
+          width="150"
+          fixed="right"
+        >
+        <template #default="{ row }">
+          <el-button 
+            size="small"
+            type="primary"
+            @click="$router.push('/manager/course')"
+        >
+      查看
+    </el-button>
+  </template>
+          
+        </el-table-column>
+      </el-table>
+    </el-card>
+  </div>
+
+  <div class="recommended-courses">
+    <el-row :gutter="20" v-loading="loading">
       <el-col 
         v-for="course in recommendedCourses" 
         :key="course.id" 
-        :xs="24" 
-        :sm="12" 
-        :md="8"
+        :span="8"
       >
-        <div class="course-item">
-          <img :src="course.image" :alt="course.name" class="course-image">
+        <el-card shadow="hover" class="course-card">
+          <img :src="course.image" class="course-image">
           <div class="course-info">
-            <div class="course-name">{{ course.name }}</div>
-            <div class="course-desc">{{ course.description }}</div>
+            <h3>{{ course.title }}</h3>
+            <p>{{ course.description }}</p>
             <div class="course-meta">
-              <span>
-                <el-icon><Timer /></el-icon>
-                {{ course.duration }}
-              </span>
-              <span>
-                <el-icon><User /></el-icon>
-                {{ course.coach }}
-              </span>
-              <span>
-                <el-icon><Tickets /></el-icon>
-                剩余名额: {{ course.remain }}
-              </span>
+              <span>课时：{{ course.during }}</span>
+              <span>教练：{{ course.coachName }}</span>
+              <span>剩余名额：{{ course.remain }}</span>
             </div>
-            <el-button 
-              type="primary" 
-              :disabled="!course.remain"
-              @click="bookCourse(course)"
-            >
-              {{ course.remain ? '立即预约' : '名额已满' }}
-            </el-button>
+            <div class="course-status">
+              <el-tag :type="course.status === 'RESERVED' ? 'success' : 'info'">
+                {{ course.status === 'RESERVED' ? '已预约' : '可预约' }}
+              </el-tag>
+            </div>
           </div>
-        </div>
+        </el-card>
       </el-col>
-      <el-empty 
-        v-if="!recommendedCourses.length" 
-        description="暂无推荐课程" 
-      />
     </el-row>
-  </el-card>
-
+  </div>
+    <!-- 用户/学员专属区域 -->
+    <div v-if="role === 'USER'">
       <!-- 我的预约 -->
       <el-card class="my-appointment-card">
-        <template #header>
-          <div class="card-header-with-action">
-            <span>我的预约</span>
-            <el-button type="primary" size="small" @click="viewAllAppointments">查看全部</el-button>
+  <template #header>
+    <div class="card-header-with-action">
+      <span class="header-title">我的预约</span>
+      <el-button type="primary" size="small" @click="viewAllAppointments">
+        查看全部
+      </el-button>
+    </div>
+  </template>
+  
+  <div v-loading="loading.appointments" class="appointment-content">
+    <el-empty 
+      v-if="!recommendedCourses.length" 
+      description="暂无可预约课程" 
+      :image-size="120"
+    />
+    
+    <el-table 
+      v-else 
+      :data="recommendedCourses" 
+      style="width: 100%"
+      :header-cell-style="{ background: '#f5f7fa' }"
+      border
+    >
+      <el-table-column prop="type" label="科目" width="120">
+        <template #default="{ row }">
+          <span class="course-type">{{ row.type }}</span>
+        </template>
+      </el-table-column>
+      
+      <el-table-column label="预约时间" min-width="220">
+        <template #default="{ row }">
+          <div class="time-range">
+            <el-icon><Timer /></el-icon>
+            <span>{{ formatDateTime(row.startTime) }}</span>
+            <el-divider direction="vertical" />
+            <span>{{ formatDateTime(row.endTime) }}</span>
           </div>
         </template>
-        <el-table :data="myAppointments" style="width: 100%" v-loading="loading.appointments">
-          <el-table-column prop="courseName" label="课程名称" />
-          <el-table-column prop="coach" label="教练" />
-          <el-table-column prop="appointmentTime" label="预约时间" width="180" />
-          <el-table-column prop="status" label="状态">
-            <template #default="scope">
-              <el-tag :type="getStatusType(scope.row.status)">{{ scope.row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="150">
-            <template #default="scope">
-              <el-button size="small" @click="viewAppointmentDetail(scope.row)">详情</el-button>
-              <el-button 
-                v-if="scope.row.status === '待确认'" 
-                size="small" 
-                type="danger" 
-                @click="cancelAppointment(scope.row)"
-              >取消</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-    </div>
-
-    <!-- 悬浮 3D 汽车按钮区域 -->
-    <!-- 修改悬浮汽车的模板 -->
-<div 
-  class="floating-car" 
-  @mousedown.prevent="handleDragStart"
-  :style="{
-    position: 'fixed',
-    left: `${dragPosition.x}px`,
-    top: `${dragPosition.y}px`,
-    cursor: isDragging ? 'grabbing' : 'grab',
-    userSelect: 'none',
-    zIndex: isDragging ? 1000 : 999  // 调整拖拽时和非拖拽时的层级
-  }"
->
-  <img 
-    src="/assets/realistic-car.svg" 
-    class="car-shape" 
-    draggable="false"
-    @click="!isDragging && navigateByRole"
-  />
-  <div 
-    class="car-tooltip" 
-    :style="{ 
-      zIndex: 1001,
-      opacity: isDragging ? 0 : undefined 
-    }"
-  >
-    {{carButtonText}}
+      </el-table-column>
+      
+      <el-table-column label="状态" width="100" align="center">
+        <template #default="{ row }">
+          <el-tag 
+            :type="getStatusTagType(row.status)"
+            size="small"
+            effect="light"
+          >
+            {{ getAppointmentStatus(row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      
+      <el-table-column fixed="right" label="操作" width="150" align="center">
+        <template #default="{ row }">
+          <el-button 
+            v-if="row.status === 'RESERVED'"
+            link 
+            type="danger" 
+            :icon="Delete"
+            @click="handleCancelReservation(row)"
+          >
+            取消预约
+          </el-button>
+          <el-button 
+            v-else
+            link 
+            type="primary" 
+            :icon="Check"
+            @click="handleReservation(row)"
+            :disabled="row.remain === 0"
+          >
+            立即预约
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
-</div>
+</el-card>
+    </div>
+    <FloatingCar :role="role" />
   </div>
 </template>
 
@@ -307,80 +267,63 @@ import { useRouter } from 'vue-router';
 import CountTo from 'vue3-count-to';
 import { getNoticeList } from '@/api/notice'
 import { getCourseList } from '@/api/course' 
+import FloatingCar from '@/components/dashboard/FloatingCar.vue'
+import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
+import { 
+  getUserReservations_List,  // 获取预约列表
+  getUserReservations,       // 获取预约状态
+  cancelReservation 
+} from '@/api/reservation'
 
 const router = useRouter();
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
 const role = ref(userInfo.value.role || 'USER');
-const loading = ref(false);
+// const loading = ref(false);
 
-// 根据角色显示不同的统计数据
-const statisticsData = ref({
-  // 管理员看到的统计数据
-  admin: {
-    studentCount: 256,
-    courseCount: 12,
-    vehicleCount: 45,
-    todayLessons: 28,
-    pendingAppointments: 8,
-    newUsers: 15
-  },
-  // 教练看到的统计数据
-  coach: {
-    myStudents: 45,
-    myCourses: 5,
-    todayLessons: 4,
-    completedLessons: 124,
-    pendingAppointments: 3
-  },
-  // 学员看到的统计数据
-  user: {
-    completedCourses: 3,
-    scheduledCourses: 2,
-    daysToExam: 15,
-    learningHours: 24
+const loading = ref({
+  courses: false,
+  recommended: false,
+  notices: false,
+  appointments: false
+})
+
+const recommendedCourses = ref([])
+// 检查用户预约状态
+const checkUserReservations = async () => {
+  try {
+    const res = await getUserReservations(userInfo.value.id)
+    console.log('预约状态响应:', res)
+    
+    if (res.code === '200') {
+      const reservationsData = res.data || []
+      
+      // 创建预约映射
+      const reservationMap = new Map(
+        reservationsData.map(reservation => [reservation.courseId, {
+          id: reservation.id,
+          status: reservation.status || 'NOT_RESERVED'
+        }])
+      )
+      
+      // 更新推荐课程的预约状态
+      recommendedCourses.value = recommendedCourses.value.map(course => ({
+        ...course,
+        status: reservationMap.get(course.id)?.status || 'NOT_RESERVED'
+      }))
+      
+      console.log('更新后的推荐课程:', recommendedCourses.value)
+    }
+  } catch (error) {
+    console.error('获取预约状态失败:', error)
+    ElMessage.error('获取预约状态失败')
   }
-});
-
-// 根据角色计算显示的卡片数据
-const cardDataForRole = computed(() => {
-  if (role.value === 'ADMIN') {
-    return [
-      { title: '学员总数', value: statisticsData.value.admin.studentCount, icon: 'User', type: 'blue-card' },
-      { title: '课程总数', value: statisticsData.value.admin.courseCount, icon: 'Document', type: 'green-card' },
-      { title: '车辆总数', value: statisticsData.value.admin.vehicleCount, icon: 'Van', type: 'orange-card' },
-      { title: '今日课程', value: statisticsData.value.admin.todayLessons, icon: 'Calendar', type: 'purple-card' },
-      { title: '待审核预约', value: statisticsData.value.admin.pendingAppointments, icon: 'Warning', type: 'red-card' },
-      { title: '新增用户', value: statisticsData.value.admin.newUsers, icon: 'UserFilled', type: 'cyan-card' }
-    ];
-  } else if (role.value === 'COACH') {
-    return [
-      { title: '我的学员', value: statisticsData.value.coach.myStudents, icon: 'User', type: 'blue-card' },
-      { title: '我的课程', value: statisticsData.value.coach.myCourses, icon: 'Document', type: 'green-card' },
-      { title: '今日课程', value: statisticsData.value.coach.todayLessons, icon: 'Calendar', type: 'purple-card' },
-      { title: '已完成课时', value: statisticsData.value.coach.completedLessons, icon: 'Check', type: 'cyan-card' },
-      { title: '待审核预约', value: statisticsData.value.coach.pendingAppointments, icon: 'Warning', type: 'red-card' }
-    ];
-  } else { // USER
-    return [
-      { title: '已完成课程', value: statisticsData.value.user.completedCourses, icon: 'Check', type: 'green-card' },
-      { title: '已预约课程', value: statisticsData.value.user.scheduledCourses, icon: 'Calendar', type: 'blue-card' },
-      { title: '距离考试', value: statisticsData.value.user.daysToExam, icon: 'Timer', type: 'orange-card' },
-      { title: '累计学时', value: statisticsData.value.user.learningHours, icon: 'Van', type: 'purple-card' }
-    ];
-  }
-});
-
-// 系统健康状态
-const systemHealth = ref({
-  server: true,
-  database: true,
-  logs: false // 模拟日志模块异常
-});
+}
 
 // 管理员快捷操作
 const adminQuickActions = ref([
   { name: '添加新用户', icon: 'User', route: '/manager/user/add' },
-  { name: '添加新课程', icon: 'Document', route: '/manager/course' },
+  { name: '添加新课程', icon: 'Document', route: '/manager/course/add' },
   { name: '查看预约', icon: 'Van', route: '/manager/appointment/admin'},
   { name: '发布公告', icon: 'Bell', route: '/manager/notice/add' },
   { name: '查看日志', icon: 'Files', route: '/manager/logs' },
@@ -450,206 +393,315 @@ const getNoticeTypeText = (top) => {
 };
 
 // 教练今日课程数据
-const todayCourses = ref([
-  { 
-    id: 1, 
-    time: '09:00-10:30', 
-    courseName: '科目二倒车入库', 
-    studentCount: 5, 
-    location: '训练场地A区' 
-  },
-  { 
-    id: 2, 
-    time: '13:00-14:30', 
-    courseName: '科目二侧方停车', 
-    studentCount: 3, 
-    location: '训练场地B区' 
-  },
-  { 
-    id: 3, 
-    time: '15:00-16:30', 
-    courseName: '科目三路口转弯', 
-    studentCount: 4, 
-    location: '城市道路训练区' 
+const todayCourses = ref([]);
+// 获取今日课程
+
+// 获取教练课程列表
+const loadRecentCourses = async () => {
+  if (!loading.value || typeof loading.value !== 'object') {
+    loading.value = { courses: false }
   }
-]);
-
-// 教练待审核预约
-const pendingAppointments = ref([
-  { 
-    id: 1, 
-    studentName: '张三', 
-    courseName: '科目二倒车入库', 
-    appointmentTime: '2025-03-15 09:00-10:30' 
-  },
-  { 
-    id: 2, 
-    studentName: '李四', 
-    courseName: '科目三路口转弯', 
-    appointmentTime: '2025-03-16 13:00-14:30' 
-  }
-]);
-
-// 学员学习进度
-const learningProgress = ref([
-  { name: '科目一 - 理论考试', percentage: 100, completed: true },
-  { name: '科目二 - 场地驾驶', percentage: 75, completed: false },
-  { name: '科目三 - 道路驾驶', percentage: 0, completed: false },
-  { name: '科目四 - 安全文明', percentage: 0, completed: false }
-]);
-
-// 学员推荐课程
-const recommendedCourses = ref([]);
-
-// 添加获取推荐课程的方法
-const loadRecommendedCourses = async () => {
+  
   try {
-    const res = await getCourseList({
-      pageNum: 1,
-      pageSize: 3,  // 限制只获取3个课程
-      title: '',
-      type: '',
-      // 可以添加排序条件
-      sortBy: 'createdTime',
-      sortOrder: 'desc'
-    });
+    loading.value.courses = true
     
+    const params = {
+      pageNum: 1,
+      pageSize: 5,
+      coachId: userInfo.value.id,
+      sortBy: 'startTime',
+      sortOrder: 'asc'
+    }
+    
+    console.log('请求参数:', params)
+    const res = await getCourseList(params)
+    console.log('课程响应:', res)
+
     if (res.code === '200') {
-      recommendedCourses.value = (res.data.records || [])
-        .filter(course => course.remain > 0)  // 只显示还有剩余名额的课程
-        .map(course => ({
-          id: course.id,
-          name: course.title,
-          description: course.description,
-          duration: `${course.during || 0}课时`,
-          coach: course.coachName,
-          type: course.type,
-          remain: course.remain,
-          startTime: course.startTime,
-          image: course.image || `/assets/imgs/course${(course.id % 3) + 1}.jpg`
-        }));
-      console.log('处理后的推荐课程:', recommendedCourses.value);
+      todayCourses.value = res.data.records.map(course => ({
+        id: course.id,
+        title: course.title,
+        startTime: course.startTime,
+        endTime: course.endTime,
+        currentCount: course.currentCount || 0,
+        maxCount: course.maxCount || 30,
+        location: course.location || '未设置',
+        status: course.status || 0,
+        type: course.type,
+        coachId: course.coachId,
+        coachName: course.coachName
+      }))
+      console.log('处理后的课程数据:', todayCourses.value)
+    } else {
+      ElMessage.error(res.msg || '获取课程失败')
     }
   } catch (error) {
-    console.error('加载推荐课程失败:', error);
+    console.error('获取课程失败:', error)
+    ElMessage.error('获取课程数据失败')
+  } finally {
+    if (loading.value && typeof loading.value === 'object') {
+      loading.value.courses = false
+    }
   }
-};
+}
 
+// 格式化日期时间
+const formatDateTime = (time) => {
+  return time ? dayjs(time).format('YYYY-MM-DD HH:mm') : '-'
+}
+
+// 获取状态类型
+const getStatusType = (status) => {
+  const statusMap = {
+    0: 'info',    // 未开始
+    1: 'success', // 进行中
+    2: 'warning', // 已结束
+    3: 'danger'   // 已取消
+  }
+  return statusMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const statusMap = {
+    0: '未开始',
+    1: '进行中',
+    2: '已结束',
+    3: '已取消'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 判断是否可以开始课程
+// const canStartCourse = (course) => {
+//   if (course.status !== 0) return false
+//   const now = dayjs()
+//   const courseTime = dayjs(course.startTime)
+//   return now.isAfter(courseTime.subtract(30, 'minute')) && 
+//          now.isBefore(courseTime.add(course.during, 'hour'))
+// }
+
+// 查看全部课程
+// const viewAllCourses = () => {
+//   router.push('/manager/course')
+// }
+
+const courseImages = [
+  '/src/assets/imgs/course2.jpg',
+  '/src/assets/imgs/course3.jpg',
+  '/src/assets/imgs/course1.jpg'
+]
+// 修改加载推荐课程的函数
+const loadRecommendedCourses = async () => {
+  try {
+    loading.value = true;
+    const params = {
+      pageNum: 1,
+      pageSize: 3,  // 只获取3个推荐课程
+      title: '',
+      type: '',
+      // 如果是教练角色，只获取自己的课程
+      ...(role.value === 'COACH' ? { coachId: userInfo.value.id } : {})
+    }
+
+    const res = await getCourseList(params)
+    console.log('推荐课程响应:', res)
+
+    if (res.code === '200') {
+      recommendedCourses.value = (res.data.records || []).map(record => ({
+        id: record.id,
+        title: record.title,
+        description: record.description,
+        type: record.type || '未知',
+        during: record.during || 30,
+        startTime: record.startTime,
+        endTime: record.endTime,
+        createdTime: record.createdTime,
+        coachId: record.coachId,
+        coachName: record.coachName,
+        remain: record.remain || 30,
+        status: record.status,
+        // 添加默认图片
+        image: record.image || courseImages[record.id % 3]
+      }))
+
+      // 如果是用户角色，检查预约状态
+      if (role.value === 'USER') {
+        await checkUserReservations();
+      }
+
+      console.log('处理后的推荐课程:', recommendedCourses.value);
+    } else {
+      ElMessage.error(res.msg || '加载推荐课程失败')
+    }
+  } catch (error) {
+    console.error('加载推荐课程失败:', error)
+    ElMessage.error('加载推荐课程失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 学员的预约记录
-const myAppointments = ref([
-  {
-    id: 1,
-    courseName: '科目二倒车入库训练',
-    coach: '王教练',
-    appointmentTime: '2025-03-15 09:00-10:30',
-    status: '已确认'
-  },
-  {
-    id: 2,
-    courseName: '科目二侧方停车训练',
-    coach: '王教练',
-    appointmentTime: '2025-03-17 13:00-14:30',
-    status: '待确认'
+const myAppointments = ref([]);
+// 获取预约状态显示
+const getAppointmentStatus = (status) => {
+  const statusMap = {
+    'RESERVED': '已预约',
+    'NOT_RESERVED': '未预约',
+    'CANCELLED': '已取消'  // 保留取消状态以支持取消预约功能
   }
-]);
-
-// 根据角色返回不同的按钮文本
-const carButtonText = computed(() => {
-  if (role.value === 'ADMIN') {
-    return '进入实时监控看板';
-  } else if (role.value === 'COACH') {
-    return '进入教学资源中心';
-  } else {
-    return '进入学习资料中心';
-  }
-});
-
-// 修改导航方法
-const navigateByRole = () => {
-  if (!isDragging.value) {  // 确保不是在拖拽状态
-    try {
-      if (role.value === 'ADMIN') {
-        // 使用路由导航而不是直接修改 location
-        router.push('/market-analysis/ershouche/index');
-        // 或者如果必须使用完整URL：
-        // window.open('/market-analysis/ershouche/index.html', '_blank');
-      } else if (role.value === 'COACH') {
-        router.push('/coach/resources');
-      } else {
-        router.push('/market-analysis/ershouche/price');
-      }
-    } catch (error) {
-      console.error('导航失败:', error);
-      ElMessage.error('页面跳转失败，请稍后重试');
-    }
-  }
-};
+  return statusMap[status] || '未预约'
+}
 
 // 获取状态标签类型
-const getStatusType = (status) => {
+const getStatusTagType = (status) => {
   const typeMap = {
-    '待确认': 'warning',
-    '已确认': 'success',
-    '已完成': 'info',
-    '已取消': 'danger'
-  };
-  return typeMap[status] || 'info';
-};
+    'RESERVED': 'success',
+    'NOT_RESERVED': 'info',
+    'CANCELLED': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
 
-// 教练操作方法
-const viewAllSchedule = () => {
-  router.push('/manager/course-booking');
-};
+// 修改预约记录的数据转换
+const loadMyAppointments = async () => {
+  if (!userInfo.value.id) return
+  
+  try {
+    // 确保 loading 是一个对象
+    if (typeof loading.value !== 'object') {
+      loading.value = {
+        courses: false,
+        recommended: false,
+        notices: false,
+        appointments: false
+      }
+    }
+    
+    loading.value.appointments = true
+    const res = await getUserReservations_List({
+      pageNum: 1,
+      pageSize: 5,
+      userId: userInfo.value.id
+    })
+    
+    if (res.code === '200' && res.data?.records) {
+      myAppointments.value = res.data.records.map(item => ({
+        id: item.id,
+        courseId: item.courseId,
+        type: item.type || '未知科目',
+        name: item.name,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        status: item.status || 'NOT_RESERVED'
+      }))
+    }
+  } catch (error) {
+    console.error('获取预约失败:', error)
+    ElMessage.error('获取预约数据失败')
+  } finally {
+    if (typeof loading.value === 'object') {
+      loading.value.appointments = false
+    }
+  }
+}
+// 查看预约详情
+const viewAppointmentDetail = (appointment) => {
+  if (!appointment.courseId) {
+    ElMessage.warning('课程信息不存在')
+    return
+  }
+  router.push({
+    path: '/manager/course',
+    query: { 
+      courseId: appointment.courseId
+    }
+  })
+}
 
-const viewCourseDetail = (course) => {
-  router.push(`/manager/course-detail/${course.id}`);
-};
+// 取消预约
+const cancelAppointment = async (appointment) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要取消这个预约吗？',
+      '取消预约',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const res = await cancelReservation(userInfo.value.id, appointment.id)
+    if (res.code === '200') {
+      ElMessage.success('预约已取消')
+      await loadMyAppointments()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消预约失败:', error)
+      ElMessage.error('取消预约失败')
+    }
+  }
+}
+// 添加预约操作方法
+const handleReservation = async (course) => {
+  try {
+    const payload = {
+      courseId: course.id,
+      userId: userInfo.value.id
+    }
+    
+    const res = await createReservation(payload)
+    if (res.code === '200') {
+      ElMessage.success('预约成功')
+      // 更新课程状态
+      course.status = 'RESERVED'
+      course.remain = Math.max(0, course.remain - 1)
+      await checkUserReservations()
+    } else {
+      throw new Error(res.msg || '预约失败')
+    }
+  } catch (error) {
+    console.error('预约失败:', error)
+    ElMessage.error('预约失败')
+  }
+}
 
-const startCourse = (course) => {
-  ElMessage.success(`已开始课程：${course.courseName}`);
-};
-
-const viewAllPending = () => {
-  router.push('/manager/course-appointment');
-};
-
-const approveAppointment = (appointment) => {
-  ElMessage.success(`已通过 ${appointment.studentName} 的预约申请`);
-  // 在实际应用中，这里应该调用API处理预约通过逻辑
-};
-
-const rejectAppointment = (appointment) => {
-  ElMessage.warning(`已拒绝 ${appointment.studentName} 的预约申请`);
-  // 在实际应用中，这里应该调用API处理预约拒绝逻辑
-};
-
+// 添加取消预约方法
+const handleCancelReservation = async (course) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要取消这个预约吗？',
+      '取消预约',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const res = await cancelReservation(userInfo.value.id, course.id)
+    if (res.code === '200') {
+      ElMessage.success('取消预约成功')
+      // 更新课程状态
+      course.status = 'NOT_RESERVED'
+      course.remain = course.remain + 1
+      await checkUserReservations()
+    } else {
+      throw new Error(res.msg || '取消预约失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消预约失败:', error)
+      ElMessage.error('取消预约失败')
+    }
+  }
+}
 // 学员操作方法
 const viewAllAppointments = () => {
-  router.push('/user/appointments');
-};
-
-const viewAppointmentDetail = (appointment) => {
-  router.push(`/user/appointment-detail/${appointment.id}`);
-};
-
-const cancelAppointment = (appointment) => {
-  ElMessageBox.confirm(
-    `确定要取消课程 "${appointment.courseName}" 的预约吗？`,
-    '取消预约',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    ElMessage.success('预约已取消');
-    // 在实际应用中，这里应该调用API处理取消预约逻辑
-  }).catch(() => {});
-};
-
-const bookCourse = (course) => {
-  router.push(`/user/book-course/${course.id}`);
+  router.push('/appointment/Userappointment');
 };
 
 // 管理员操作方法
@@ -657,81 +709,36 @@ const handleQuickAction = (route) => {
   router.push(route);
 };
 
-const handleAddAnnouncement = () => {
-  router.push('/manager/notice');
-};
 
-const fixLogsSystem = () => {
-  ElMessage.success('已发送修复指令，系统正在处理中...');
-  setTimeout(() => {
-    systemHealth.value.logs = true;
-    ElMessage.success('日志系统已恢复正常');
-  }, 2000);
-};
+onMounted(async () => {
+  try {
+    // 确保 loading 的所有属性都已初始化
+    loading.value = {
+      courses: false,
+      recommended: false,
+      notices: false,
+      appointments: false
+    }
 
-// 模拟获取数据
-const fetchData = async () => {
-  // 在实际应用中，这里应该从API获取真实数据
-  // 目前使用模拟数据演示
-};
+    const loadPromises = []
+    
+    // 根据角色加载不同数据
+    if (role.value === 'USER') {
+      loadPromises.push(loadRecommendedCourses())
+      loadPromises.push(loadMyAppointments())
+    } else if (role.value === 'COACH') {
+      loadPromises.push(loadRecentCourses())
+    }
+    
+    // 公告是所有角色都需要加载的
+    loadPromises.push(loadNotices())
 
-// 在 script setup 中添加拖拽相关的状态和方法
-const isDragging = ref(false);
-const dragPosition = ref({ x: 50, y: 30 }); // 初始位置
-const dragOffset = ref({ x: 0, y: 0 });
-
-// 添加拖拽处理方法
-const handleDragStart = (e) => {
-  e.preventDefault();
-  isDragging.value = true;
-  // 记录鼠标按下时的偏移量
-  dragOffset.value = {
-    x: e.clientX - dragPosition.value.x,
-    y: e.clientY - dragPosition.value.y
-  };
-  // 添加事件监听器
-  document.addEventListener('mousemove', handleDragMove);
-  document.addEventListener('mouseup', handleDragEnd);
-};
-
-const handleDragMove = (e) => {
-  if (!isDragging.value) return;
-  
-  // 计算新位置
-  const newX = e.clientX - dragOffset.value.x;
-  const newY = e.clientY - dragOffset.value.y;
-  
-  // 限制边界
-  const maxX = window.innerWidth - 150; // 汽车宽度
-  const maxY = window.innerHeight - 90; // 汽车高度
-  
-  dragPosition.value = {
-    x: Math.min(Math.max(0, newX), maxX),
-    y: Math.min(Math.max(0, newY), maxY)
-  };
-};
-
-const savePosition = () => {
-  localStorage.setItem('floatingCarPosition', JSON.stringify(dragPosition.value));
-};
-
-// 在 handleDragEnd 中添加保存
-const handleDragEnd = () => {
-  isDragging.value = false;
-  document.removeEventListener('mousemove', handleDragMove);
-  document.removeEventListener('mouseup', handleDragEnd);
-  savePosition(); // 保存位置
-};
-
-onMounted(() => {
-  const savedPosition = localStorage.getItem('floatingCarPosition');
-  if (savedPosition) {
-    dragPosition.value = JSON.parse(savedPosition);
+    await Promise.all(loadPromises)
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+    ElMessage.error('加载数据失败')
   }
-  loadNotices() 
-  fetchData();
-  loadRecommendedCourses();
-});
+})
 </script>
 
 <style lang="scss" scoped>
@@ -851,44 +858,6 @@ onMounted(() => {
   color: #909399;
 }
 
-/* 系统监控区域 */
-.monitoring-section {
-  margin-bottom: 20px;
-}
-
-.monitor-card {
-  position: relative;
-  height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-
-.monitor-title {
-  font-size: 16px;
-  margin-bottom: 15px;
-  color: #606266;
-}
-
-.monitor-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #f56c6c;
-}
-
-.monitor-value.healthy {
-  color: #67c23a;
-}
-
-.fix-button {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-}
-
 /* 快捷操作区域 */
 .quick-actions {
   margin-bottom: 20px;
@@ -929,215 +898,149 @@ onMounted(() => {
 }
 
 /* 课程表样式 */
-.schedule-card, .pending-card, .my-appointment-card {
+.schedule-card {
   margin-bottom: 20px;
-  border-radius: 8px;
-}
-
-/* 学习进度样式 */
-.progress-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-
-.progress-container {
-  padding: 10px;
-}
-
-.progress-item {
-  display: flex;
-  margin-bottom: 20px;
-}
-
-.progress-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 20px;
-}
-
-.stage-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #f5f7fa;
-  color: #909399;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  border: 2px solid #dcdfe6;
-}
-
-.stage-icon.completed {
-  background-color: #67c23a;
-  color: white;
-  border-color: #67c23a;
-}
-
-.stage-line {
-  height: 50px;
-  width: 2px;
-  background-color: #dcdfe6;
-  margin: 5px 0;
-}
-
-.stage-info {
-  flex: 1;
-}
-
-.stage-name {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.stage-status {
-  color: #909399;
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-
-/* 课程推荐样式 */
-.recommendation-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-
-.course-item {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-
-.course-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.course-image {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-}
-
-.course-info {
-  padding: 15px;
-}
-
-.course-name {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.course-desc {
-  color: #606266;
-  margin-bottom: 10px;
-  height: 60px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  text-overflow: ellipsis;
-}
-
-.course-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  color: #909399;
-  font-size: 12px;
-}
-
-.course-meta .el-icon {
-  vertical-align: middle;
-  margin-right: 5px;
-}
-
-/* 修改悬浮汽车的样式 */
-.floating-car {
-  width: 150px;
-  height: 90px;
-  transition: transform 0.3s;
-  touch-action: none;
-  cursor: pointer;
   
-  .car-tooltip {
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 1001;
-  }
-
-  &:hover:not(.dragging) .car-tooltip {
-    opacity: 1;
-  }
-
-  .car-shape {
-    width: 100%;
-    height: 100%;
-    cursor: inherit;
-    transition: transform 0.3s;
-
-    &:hover {
-      transform: scale(1.1);
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .title {
+      font-size: 16px;
+      font-weight: bold;
     }
   }
 }
 
-/* 添加拖拽状态类 */
-.floating-car.dragging {
-  cursor: grabbing;
+.el-tag {
+  width: 65px;
+  text-align: center;
+}
+
+/* 课程推荐样式 */
+.recommended-courses {
+  margin: 20px 0;
   
-  .car-tooltip {
-    opacity: 0;
+  .course-card {
+    margin-bottom: 20px;
+    
+    .course-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .course-info {
+      padding: 15px;
+      
+      h3 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+      
+      .course-meta {
+        margin: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 14px;
+      }
+      
+      .course-status {
+        text-align: right;
+      }
+    }
+  }
+}
+/*我的预约*/
+.my-appointment-card {
+  margin: 20px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  
+  :deep(.el-card__header) {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--el-border-color-light);
+    background: #f8f9fb;
+    
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+    }
   }
   
-  .car-shape {
-    transform: none;
+  .appointment-content {
+    padding: 10px 0;
+    
+    .course-type {
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+    }
+    
+    .time-range {
+      display: flex;
+      align-items: center;
+      color: var(--el-text-color-regular);
+      
+      .el-icon {
+        margin-right: 5px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+    
+    :deep(.el-table) {
+      --el-table-border-color: var(--el-border-color-lighter);
+      --el-table-header-bg-color: #f5f7fa;
+      
+      th {
+        font-weight: 600;
+      }
+      
+      .el-button {
+        padding: 4px 0;
+        
+        .el-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+    
+    .el-tag {
+      width: 70px;
+      justify-content: center;
+      
+      &--success {
+        --el-tag-bg-color: var(--el-color-success-light-9);
+      }
+      
+      &--danger {
+        --el-tag-bg-color: var(--el-color-danger-light-9);
+      }
+      
+      &--info {
+        --el-tag-bg-color: var(--el-color-info-light-9);
+      }
+    }
   }
 }
 
-/* 响应式调整 */
+/* 适配移动端 */
 @media screen and (max-width: 768px) {
-  .data-card, .monitor-card, .action-card {
-    height: 100px;
-  }
-  
-  .card-number {
-    font-size: 22px;
-  }
-  
-  .floating-car {
-    width: 60px;
-    height: 60px;
-    bottom: 20px;
-    right: 20px;
-  }
-  
-  .progress-stage {
-    margin-right: 10px;
-  }
-  
-  .stage-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
+  .my-appointment-card {
+    margin: 10px;
+    
+    .time-range {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .el-divider {
+        display: none;
+      }
+    }
   }
 }
-
 /* 状态颜色 */
 .el-tag--success {
   background-color: #f0f9eb;

@@ -13,6 +13,9 @@
     "axios": "^1.7.9",
     "chart.js": "^4.4.1",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "echarts-china-provinces-js": "^1.0.0",
+    "echarts-wordcloud": "^2.1.0",
     "element-plus": "^2.9.4",
     "highlight.js": "^11.11.1",
     "pinia": "^3.0.1",
@@ -24,7 +27,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "sass": "^1.85.0",
+    "sass": "^1.86.0",
     "unplugin-auto-import": "^19.1.0",
     "unplugin-element-plus": "^0.9.1",
     "unplugin-vue-components": "^28.2.0",

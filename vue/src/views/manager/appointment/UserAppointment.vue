@@ -4,66 +4,28 @@
       <template #header>
         <div class="card-header">
           <span class="header-title">我的预约</span>
-          <div class="header-actions">
-            <el-button type="primary" @click="$router.push('/user/course')">预约课程</el-button>
-          </div>
         </div>
       </template>
 
-      <div class="search-section">
-        <el-select v-model="queryParams.status" placeholder="预约状态" @change="handleSearch">
-          <el-option label="全部" value="" />
-          <el-option label="待审核" value="PENDING" />
-          <el-option label="已通过" value="APPROVED" />
-          <el-option label="已拒绝" value="REJECTED" />
-          <el-option label="已完成" value="COMPLETED" />
-        </el-select>
-      </div>
-
       <div class="table-section">
         <el-table :data="reservationList" v-loading="loading" border stripe>
-          <el-table-column prop="courseTitle" label="课程名称" />
-          <el-table-column prop="coachName" label="教练" />
-          <el-table-column prop="appointmentTime" label="预约时间" sortable />
-          <el-table-column prop="status" label="状态">
-            <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)">
-                {{ getStatusText(row.status) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
-            <template #default="{ row }">
-              <el-button 
-                v-if="row.status === 'PENDING'"
-                type="danger" 
-                size="small" 
-                @click="handleCancel(row)"
-              >
-                取消预约
-              </el-button>
-              <el-button
-                v-if="row.status === 'APPROVED'"
-                type="success"
-                size="small"
-                @click="handleComplete(row)"
-              >
-                完成课程
-              </el-button>
-            </template>
+          <el-table-column prop="name" label="学员姓名" />
+          <el-table-column prop="type" label="课程名称" />
+          <el-table-column prop="startTime" label="预约开始时间" sortable />
+          <el-table-column prop="endTime" label="预约结束时间" sortable >
           </el-table-column>
         </el-table>
       </div>
 
       <div class="pagination-section">
         <el-pagination
-          v-model:current-page="queryParams.pageNum"
-          v-model:page-size="queryParams.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 30, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
+            v-model:current-page="queryParams.pageNum"
+            v-model:page-size="queryParams.pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 30, 50]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
         />
       </div>
     </el-card>
@@ -71,78 +33,66 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getUserReservations, cancelReservation } from '@/api/reservation'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { getStatusType, getStatusText } from '@/utils/status'
+import { getUserReservations_List } from '@/api/reservation.js'; // 请替换为实际的路径
 
-const userStore = useUserStore()
+// 用户信息
+const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
+const userId = ref(userInfo.value.id) // 获取用户ID
+
+// 列表数据
+const reservationList = ref([])
 const loading = ref(false)
 const total = ref(0)
-const reservationList = ref([])
 
-const queryParams = ref({
+// 查询参数
+const queryParams = reactive({
   pageNum: 1,
-  pageSize: 10,
-  status: '',
-  userId: userStore.userId
+  pageSize: 10
 })
 
-// 加载预约列表
-const loadReservations = async () => {
+// 加载用户预约列表
+const loadUserReservations = async () => {
+  loading.value = true
   try {
-    loading.value = true
-    const res = await getUserReservations(queryParams.value)
+    const params = {
+      pageNum: queryParams.pageNum,
+      pageSize: queryParams.pageSize,
+      userId: userId.value, // 传递用户ID
+    }
+
+    console.log("请求参数", params); // 打印请求参数
+    const res = await getUserReservations_List(params) // 假设有这个API
+    console.log("返回结果", res); // 打印返回结果
     if (res.code === '200') {
       reservationList.value = res.data.records
       total.value = res.data.total
+    } else {
+      ElMessage.error(res.msg)
     }
   } catch (error) {
-    console.error('获取预约列表失败:', error)
-    ElMessage.error('获取预约列表失败')
+    console.error('加载失败:', error)
+    ElMessage.error('加载预约列表失败')
   } finally {
     loading.value = false
   }
 }
 
-// 处理取消预约
-const handleCancel = async (row) => {
-  try {
-    await ElMessageBox.confirm('确定要取消该预约吗?', '提示', {
-      type: 'warning'
-    })
-    const res = await cancelReservation(row.userId, row.slotId)
-    if (res.code === '200') {
-      ElMessage.success('取消预约成功')
-      loadReservations()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('取消预约失败:', error)
-      ElMessage.error('取消预约失败')
-    }
-  }
-}
-
-// 分页方法
+// 分页处理
 const handleSizeChange = (val) => {
-  queryParams.value.pageSize = val
-  loadReservations()
+  queryParams.pageSize = val
+  loadUserReservations()
 }
 
 const handleCurrentChange = (val) => {
-  queryParams.value.pageNum = val
-  loadReservations()
+  queryParams.pageNum = val
+  loadUserReservations()
 }
 
-const handleSearch = () => {
-  queryParams.value.pageNum = 1
-  loadReservations()
-}
-
+// 组件挂载时加载数据
 onMounted(() => {
-  loadReservations()
+  loadUserReservations();
 })
 </script>
 

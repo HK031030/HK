@@ -1,60 +1,199 @@
 .appointment-container {
-  padding: 20px;
+  padding: 0px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 84px);
   
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
     
     .header-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 600;
       color: #303133;
+      position: relative;
+      padding-left: 12px;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 16px;
+        background-color: #409eff;
+        border-radius: 2px;
+      }
     }
     
     .header-actions {
       display: flex;
-      gap: 12px;
+      gap: 16px;
       align-items: center;
     }
   }
   
   .search-section {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
+    margin-bottom: 24px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
     
-    .el-input {
-      width: 220px;
-    }
-    
-    .el-select {
-      width: 150px;
+    .search-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      
+      .el-input {
+        width: 240px;
+        
+        .el-input__inner {
+          border-radius: 4px;
+          
+          &:hover {
+            border-color: #409eff;
+          }
+        }
+      }
+      
+      .el-select {
+        width: 180px;
+      }
+      
+      .search-buttons {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+      }
     }
   }
   
   .table-section {
-    margin: 20px 0;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
     
-    .el-tag {
-      min-width: 80px;
-      text-align: center;
+    .el-table {
+      // 表格样式优化
+      &::before {
+        display: none;
+      }
+      
+      th {
+        background-color: #f5f7fa;
+        color: #606266;
+        font-weight: 600;
+        height: 48px;
+      }
+      
+      td {
+        padding: 12px 0;
+      }
+    }
+    
+    // 状态标签样式
+    .status-tag {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-block;
+      line-height: 1;
+      white-space: nowrap;
+      
+      &--pending {
+        background-color: #fdf6ec;
+        color: #e6a23c;
+        border: 1px solid #faecd8;
+      }
+      
+      &--approved {
+        background-color: #f0f9eb;
+        color: #67c23a;
+        border: 1px solid #e1f3d8;
+      }
+      
+      &--rejected {
+        background-color: #fef0f0;
+        color: #f56c6c;
+        border: 1px solid #fde2e2;
+      }
+      
+      &--completed {
+        background-color: #ecf5ff;
+        color: #409eff;
+        border: 1px solid #d9ecff;
+      }
     }
   }
   
   .pagination-section {
-    margin-top: 20px;
+    margin-top: 24px;
+    padding: 16px 20px;
+    background-color: #fff;
+    border-radius: 8px;
     display: flex;
     justify-content: flex-end;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    
+    .el-pagination {
+      padding: 0;
+      button:not(:disabled) {
+        background-color: #f4f4f5;
+        color: #606266;
+        
+        &:hover {
+          color: #409eff;
+        }
+      }
+      
+      .el-pager li {
+        background-color: #f4f4f5;
+        
+        &.active {
+          background-color: #409eff;
+          color: #fff;
+        }
+        
+        &:hover:not(.active) {
+          color: #409eff;
+        }
+      }
+    }
   }
 }
 
-// 状态标签颜色
-.status-tag {
-  &--pending { @apply bg-orange-100 text-orange-600; }
-  &--approved { @apply bg-green-100 text-green-600; }
-  &--rejected { @apply bg-red-100 text-red-600; }
-  &--completed { @apply bg-blue-100 text-blue-600; }
+// 响应式处理
+@media screen and (max-width: 768px) {
+  .appointment-container {
+    padding: 16px;
+    
+    .search-section {
+      .search-form {
+        .el-input,
+        .el-select {
+          width: 100%;
+        }
+        
+        .search-buttons {
+          width: 100%;
+          margin-left: 0;
+          
+          .el-button {
+            flex: 1;
+          }
+        }
+      }
+    }
+  }
 }

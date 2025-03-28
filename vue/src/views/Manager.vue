@@ -100,7 +100,7 @@
               index="/manager/appointment/coach"
             >
               <el-icon><Document /></el-icon>
-              <span>预约审核</span>
+              <span>预约查看</span>
             </el-menu-item>
           
             <!-- 用户预约管理 -->

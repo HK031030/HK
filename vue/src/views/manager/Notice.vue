@@ -33,7 +33,7 @@
       <el-table-column prop="id" label="序号" width="70" align="center"></el-table-column>
       <el-table-column prop="title" label="标题"></el-table-column>
       <el-table-column prop="content" label="内容" show-overflow-tooltip></el-table-column>
-      <el-table-column prop="user" label="发布人"></el-table-column>
+      <el-table-column prop="username" label="发布人"></el-table-column>
       <el-table-column prop="time" label="发布时间"></el-table-column>
       <el-table-column label="是否公开">
         <template v-slot="scope">
@@ -44,6 +44,24 @@
           ></el-switch>
         </template>
       </el-table-column>
+      <!-- 将下拉框改为可点击的标签 -->
+<el-table-column 
+  label="置顶" 
+  width="80" 
+  align="center"
+  v-if="hasPermission('notice-top')"
+>
+  <template #default="{ row }">
+    <el-tag
+      :type="getTopTagType(row.top)"
+      class="top-tag"
+      @click="toggleTop(row)"
+      :style="{ cursor: 'pointer' }"
+    >
+      {{ getTopText(row.top) }}
+    </el-tag>
+  </template>
+</el-table-column>
       <el-table-column label="操作" align="center" width="180">
         <template v-slot="scope">
           <el-button 
@@ -101,7 +119,15 @@
 
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { getNoticeList, addNotice, updateNotice, deleteNotice, batchDeleteNotice, updateStatus } from '@/api/notice';
+import { 
+  getNoticeList, 
+  addNotice, 
+  updateNotice, 
+  deleteNotice, 
+  batchDeleteNotice, 
+  updateStatus,
+  updateTopStatus  // 添加这行
+} from '@/api/notice'
 import { useRoute } from 'vue-router'; // 确保导入 useRoute
 
 export default {
@@ -155,7 +181,7 @@ export default {
     // 权限检查函数
     hasPermission(permission) {
       const permissions = {
-        'ADMIN': ['notice', 'notice-add', 'notice-edit', 'notice-delete', 'notice-status'],
+        'ADMIN': ['notice', 'notice-add', 'notice-edit', 'notice-delete', 'notice-status','notice-top'],
         'COACH': ['notice', 'notice-add', 'notice-edit'],
         'USER': ['notice']
       };
@@ -188,6 +214,52 @@ export default {
         ElMessage.error('状态更新失败');
       }
     },
+    // 在 methods 中添加
+    getTopTagType(top) {
+    const types = {
+      0: 'info',
+      1: 'danger',
+      2: 'warning'
+    }
+    return types[top] || 'info'
+  },
+
+  // 获取置顶文本
+  getTopText(top) {
+    const texts = {
+      0: '普通',
+      1: '重要',
+      2: '通知'
+    }
+    return texts[top] || '普通'
+  },
+
+  // 切换置顶状态
+  async toggleTop(row) {
+    if (!this.hasPermission('notice-top')) {
+      ElMessage.warning('您无权设置置顶状态')
+      return
+    }
+
+    const originalTop = row.top
+    const nextTop = (Number(row.top) + 1) % 3 // 0->1->2->0 循环
+
+    try {
+      const res = await updateTopStatus(row.id, nextTop)
+      console.log('更新置顶状态响应:', res) // 添加日志
+      if (res.code === '200') {
+        row.top = nextTop
+        ElMessage.success('置顶状态更新成功')
+        // await this.load(this.pageNum)
+      } else {
+        row.top = originalTop
+        ElMessage.error(res.msg || '置顶状态更新失败')
+      }
+    } catch (error) {
+      row.top = originalTop
+      ElMessage.error('置顶状态更新失败')
+    }
+  },
 
     async delBatch() {
       if (!this.hasPermission('notice-delete')) {
@@ -247,17 +319,18 @@ export default {
     },
 
     handleAdd() {
-      if (!this.hasPermission('notice-add')) {
-        ElMessage.warning('您无权新增公告');
-        return;
-      }
-      this.form = {
-        user: this.userInfo.username || '未知用户',
-        time: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        open: false
-      };
-      this.fromVisible = true;
-    },
+  if (!this.hasPermission('notice-add')) {
+    ElMessage.warning('您无权新增公告');
+    return;
+  }
+  this.form = {
+    user: this.userInfo.username || '未知用户',
+    time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    open: false,
+    top: 0  // 默认为普通公告
+  };
+  this.fromVisible = true;
+},
 
     async save() {
       if (!this.hasPermission(this.form.id ? 'notice-edit' : 'notice-add')) {
@@ -291,24 +364,27 @@ export default {
     },
 
     async load(pageNum) {
-      if (pageNum) this.pageNum = pageNum;
-      try {
-        const res = await getNoticeList({
-          pageNum: this.pageNum,
-          pageSize: this.pageSize,
-          title: this.title
-        });
-        console.log('Response from getNoticeList:', res);
-        if (res.code === '200') {
-          this.tableData = res.data.records || res.data.list || [];
-          this.total = res.data.total || 0;
-        } else {
-          ElMessage.error(res.msg || '获取数据失败');
-        }
-      } catch (error) {
-        ElMessage.error('获取数据失败');
-      }
-    },
+  if (pageNum) this.pageNum = pageNum;
+  try {
+    const res = await getNoticeList({
+      pageNum: this.pageNum,
+      pageSize: this.pageSize,
+      title: this.title
+    });
+    
+    if (res.code === '200') {
+      this.tableData = (res.data.records || res.data.list || []).map(item => ({
+        ...item,
+        originalTop: item.top // 保存原始置顶状态
+      }));
+      this.total = res.data.total || 0;
+    } else {
+      ElMessage.error(res.msg || '获取数据失败');
+    }
+  } catch (error) {
+    ElMessage.error('获取数据失败');
+  }
+},
 
     handleCurrentChange(pageNum) {
       this.load(pageNum);
@@ -317,7 +393,39 @@ export default {
 };
 </script>
 
+
 <style lang="scss" scoped>
+.top-tag {
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+  min-width: 40px;
+  text-align: center;
+  padding: 4px 8px;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+
+  &.el-tag--info {
+    background-color: #f4f4f5;
+    border-color: #e9e9eb;
+    color: #909399;
+  }
+
+  &.el-tag--danger {
+    background-color: #fef0f0;
+    border-color: #fde2e2;
+    color: #f56c6c;
+  }
+
+  &.el-tag--warning {
+    background-color: #fdf6ec;
+    border-color: #faecd8;
+    color: #e6a23c;
+  }
+}
 .search-bar {
   margin-bottom: 20px;
   display: flex;
@@ -334,5 +442,15 @@ export default {
 
 :deep(.el-dialog__body) {
   padding-top: 20px;
+}
+
+.top-tag {
+  transition: all 0.3s;
+  user-select: none;
+
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
 }
 </style>
