@@ -54,6 +54,9 @@
             <el-button @click="viewHistory">
               历史记录
             </el-button>
+            <el-button @click="goToCoachResources" type="success">
+              教练资源中心
+            </el-button>
           </div>
         </div>
       </template>
@@ -153,6 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage,ElMessageBox } from 'element-plus'
 // import { 
 //   Guide, 
@@ -279,6 +283,15 @@ const loading = ref(false)
 
 let timer: number | null = null
 
+
+const router = useRouter()
+// 添加跳转到教练资源中心的方法
+const goToCoachResources = () => {
+  router.push('/manager/coach/resources').catch(err => {
+    console.error('路由跳转失败:', err)
+    ElMessage.error('页面跳转失败，请检查路由配置')
+  })
+}
 // 计算属性
 const currentSubject = computed(() => 
   subjects.find(subject => subject.id === activeSubject.value)

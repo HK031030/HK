@@ -17,11 +17,13 @@
           :key="item.id"
           class="carousel-item"
         >
-          <div 
-            class="banner-item" 
-            :style="{ backgroundImage: `url(${item.image})` }"
-            @click="handleAreaClick(item)"
-          >
+        <div class="banner-item" 
+          :style="{ backgroundImage: `url(${item.image})` }"
+          @click="handleAreaClick(item)"
+          @mouseenter="showTooltip(item.title)"
+          @mouseleave="hideTooltip"
+        >
+
             <div class="banner-overlay"></div>
           </div>
         </el-carousel-item>
@@ -56,7 +58,7 @@
           @mouseenter="playHoverSound"
           @click="router.push('/login')"
         >
-          <span class="hologram-text">LOGIN</span>
+          <span class="hologram-text">登录</span>
           <div class="energy-pulse"></div>
         </button>
         
@@ -65,7 +67,7 @@
           @mouseenter="playHoverSound"
           @click="router.push('/register')"
         >
-          <span class="hologram-text">REGISTER</span>
+          <span class="hologram-text">注册</span>
           <div class="energy-pulse"></div>
         </button>
       </div>

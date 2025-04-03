@@ -91,9 +91,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
-import { login } from '@/api/user'
+
 import CaptchaComponent from './Captcha.vue' // 引入验证码组件
 import userMock from '@/mock/user.js'
+
+import { login } from '@/api/user'
 const { mockUsers } = userMock
 
 
@@ -132,67 +134,14 @@ onMounted(() => {
 
 
 
-const handleLogin = async () => {
-    try {
-        if (!username.value || !password.value) {
-            ElMessage.error('用户名和密码不能为空')
-            return
-        }
-
-        // 验证码检查
-        const captchaText = captchaRef.value.captcha
-        const userInput = captchaRef.value.userInput
-        if (!userInput) {
-            ElMessage.error('请输入验证码')
-            return
-        }
-        if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
-            ElMessage.error('验证码错误，请重试')
-            captchaRef.value.generateCaptcha()
-            return
-        }
-
-        loading.value = true
-        
-        // 使用 mock 数据模拟登录
-        const user = mockUsers.find(
-            u => u.username === username.value && 
-                u.password === password.value && 
-                u.role === role.value
-        )
-
-        if (user) {
-            // 模拟登录成功
-            const loginData = {
-                ...user,
-                token: `${user.role.toLowerCase()}-token-${Date.now()}`
-            }
-            
-            // 存储用户信息
-            localStorage.setItem('userInfo', JSON.stringify(loginData))
-            localStorage.setItem('token', loginData.token)
-            
-            ElMessage.success('登录成功')
-            await router.push('/manager/home')
-        } else {
-            ElMessage.error('用户名或密码错误')
-            captchaRef.value?.generateCaptcha()
-        }
-    } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error('登录失败，请稍后重试')
-    } finally {
-        loading.value = false
-    }
-}
-
-
 // const handleLogin = async () => {
 //     try {
 //         if (!username.value || !password.value) {
 //             ElMessage.error('用户名和密码不能为空')
 //             return
 //         }
+
+//         // 验证码检查
 //         const captchaText = captchaRef.value.captcha
 //         const userInput = captchaRef.value.userInput
 //         if (!userInput) {
@@ -204,47 +153,100 @@ const handleLogin = async () => {
 //             captchaRef.value.generateCaptcha()
 //             return
 //         }
+
 //         loading.value = true
-//         const res = await login({
-//             username: username.value,
-//             password: password.value,
-//             role: role.value
-//         })
-//         console.log('登录响应:', res)
-//         if (res.code === '200') {
+        
+//         // 使用 mock 数据模拟登录
+//         const user = mockUsers.find(
+//             u => u.username === username.value && 
+//                 u.password === password.value && 
+//                 u.role === role.value
+//         )
+
+//         if (user) {
+//             // 模拟登录成功
+//             const loginData = {
+//                 ...user,
+//                 token: `${user.role.toLowerCase()}-token-${Date.now()}`
+//             }
+            
 //             // 存储用户信息
-//             localStorage.setItem('userInfo', JSON.stringify(res.data))
-//             // 检查 token 是否存在
-//             const token = res.data.token
-//             if (!token) {
-//                 ElMessage.error('后端未返回有效的 token')
-//                 return
-//             }
-//             localStorage.setItem('token', token)
-//             console.log('存储的用户信息:', localStorage.getItem('userInfo'))
-//             console.log('存储的 token:', localStorage.getItem('token'))
-//             ElMessage.success(res.msg || '登录成功')
-//             try {
-//                 await router.push({ path: '/manager/home', replace: true })
-//             } catch (routerError) {
-//                 console.error('路由跳转失败:', routerError)
-//             }
+//             localStorage.setItem('userInfo', JSON.stringify(loginData))
+//             localStorage.setItem('token', loginData.token)
+            
+//             ElMessage.success('登录成功')
+//             await router.push('/manager/home')
 //         } else {
-//             ElMessage.error(res.msg || '登录失败')
+//             ElMessage.error('用户名或密码错误')
 //             captchaRef.value?.generateCaptcha()
 //         }
 //     } catch (error) {
 //         console.error('登录失败:', error)
 //         ElMessage.error('登录失败，请稍后重试')
-//         captchaRef.value?.generateCaptcha()
 //     } finally {
 //         loading.value = false
 //     }
 // }
 
-// const handleForgetPass = () => {
-//   router.push('/forgot-password')
-// }
+
+const handleLogin = async () => {
+    try {
+        if (!username.value || !password.value) {
+            ElMessage.error('用户名和密码不能为空')
+            return
+        }
+        const captchaText = captchaRef.value.captcha
+        const userInput = captchaRef.value.userInput
+        if (!userInput) {
+            ElMessage.error('请输入验证码')
+            return
+        }
+        if (userInput.toLowerCase() !== captchaText.toLowerCase()) {
+            ElMessage.error('验证码错误，请重试')
+            captchaRef.value.generateCaptcha()
+            return
+        }
+        loading.value = true
+        const res = await login({
+            username: username.value,
+            password: password.value,
+            role: role.value
+        })
+        console.log('登录响应:', res)
+        if (res.code === '200') {
+            // 存储用户信息
+            localStorage.setItem('userInfo', JSON.stringify(res.data))
+            // 检查 token 是否存在
+            const token = res.data.token
+            if (!token) {
+                ElMessage.error('后端未返回有效的 token')
+                return
+            }
+            localStorage.setItem('token', token)
+            console.log('存储的用户信息:', localStorage.getItem('userInfo'))
+            console.log('存储的 token:', localStorage.getItem('token'))
+            ElMessage.success(res.msg || '登录成功')
+            try {
+                await router.push({ path: '/manager/home', replace: true })
+            } catch (routerError) {
+                console.error('路由跳转失败:', routerError)
+            }
+        } else {
+            ElMessage.error(res.msg || '登录失败')
+            captchaRef.value?.generateCaptcha()
+        }
+    } catch (error) {
+        console.error('登录失败:', error)
+        ElMessage.error('登录失败，请稍后重试')
+        captchaRef.value?.generateCaptcha()
+    } finally {
+        loading.value = false
+    }
+}
+
+const handleForgetPass = () => {
+  router.push('/forgot-password')
+}
 
 
 </script>

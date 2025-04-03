@@ -96,6 +96,16 @@ const routes = [
         }
       },
       {
+        path: 'aiassistant',
+        name: 'AIAssistant',
+        component: () => import('@/views/manager/AIAssistant.vue'),
+        meta: {
+          name: '智能助手',
+          requiresAuth: true,
+          permissions: ['ai-manage']
+        }
+      },
+      {
         path: 'appointment',
         component: () => import('@/views/manager/appointment/index.vue'),
         redirect: _to => {
@@ -169,7 +179,7 @@ const routes = [
         component: () => import('@/views/coach/Resources.vue'),
         meta: { 
           name: '教练资源中心',
-          roles: ['COACH'],
+          roles: ['COACH','USER'],
           requiresAuth: true
         }
       },
@@ -187,34 +197,34 @@ const router = createRouter({
 
 
 //修改路由守卫
-// router.beforeEach((to, from, next) => {
-//   const token = localStorage.getItem('token')
-//   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-//   const role = userInfo.role || ''; // 获取用户角色
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const role = userInfo.role || ''; // 获取用户角色
   
-//   // 定义公开页面
-//   const publicPages = ['/front/home', '/login', '/register', '/forgot-password']
-//   const authRequired = !publicPages.includes(to.path)
+  // 定义公开页面
+  const publicPages = ['/front/home', '/login', '/register', '/forgot-password']
+  const authRequired = !publicPages.includes(to.path)
 
-//   // 处理需要认证的页面
-//   if (authRequired && (!token || !userInfo)) {
-//     localStorage.removeItem('token');
-//     localStorage.removeItem('userInfo');
-//     localStorage.setItem('redirectPath', to.fullPath);
-//     next('/login');
-//     return;
-//   }
+  // 处理需要认证的页面
+  if (authRequired && (!token || !userInfo)) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
+    localStorage.setItem('redirectPath', to.fullPath);
+    next('/login');
+    return;
+  }
 
-//   // 角色权限检查
-//   if (authRequired && to.meta.roles && !to.meta.roles.includes(role)) {
-//     ElMessage.error('您无权访问此页面');
-//     next('/manager/home');  // 权限不足时重定向到首页
-//     return;
-//   }
+  // 角色权限检查
+  if (authRequired && to.meta.roles && !to.meta.roles.includes(role)) {
+    ElMessage.error('您无权访问此页面');
+    next('/manager/home');  // 权限不足时重定向到首页
+    return;
+  }
 
-//   // 允许所有情况下跳转到公开页面（无需重定向）
-//   next();
-// });
+  // 允许所有情况下跳转到公开页面（无需重定向）
+  next();
+});
 
 
 export default router

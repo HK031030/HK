@@ -102,3 +102,79 @@ onUnmounted(() => {
   min-height: 200px;
 }
 </style>
+
+
+
+<!-- <template>
+  <div ref="chartRef" class="chart-container"></div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import * as echarts from 'echarts'
+import axios from 'axios'
+
+const chartRef = ref(null)
+let chart = null
+const coachData = ref({ coaches: [], workloads: [] })
+let timer = null
+
+const initChart = () => {
+  chart = echarts.init(chartRef.value)
+  const option = {
+    grid: { top: 5, bottom: 35, left: 52, right: 25, height: '80%' },
+    xAxis: { max: 'dataMax', axisLabel: { color: '#adf3e6' } },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      axisLabel: { color: '#adf3e6', fontSize: 12 },
+      data: coachData.value.coaches
+    },
+    series: [{
+      realtimeSort: true,
+      type: 'bar',
+      data: coachData.value.workloads,
+      label: { show: true, position: 'right', color: '#adf3e6', fontSize: 12 }
+    }]
+  }
+  chart.setOption(option)
+}
+
+const fetchData = async () => {
+  try {
+    const response = await axios.get('/api/coach/workload')
+    if (response.data.code === '200') {
+      coachData.value = response.data.data
+      updateChart()
+    }
+  } catch (error) {
+    console.error('获取数据失败:', error)
+  }
+}
+
+const updateChart = () => {
+  const option = chart.getOption()
+  option.yAxis[0].data = coachData.value.coaches
+  option.series[0].data = coachData.value.workloads
+  chart.setOption(option)
+}
+
+onMounted(() => {
+  initChart()
+  fetchData()
+  timer = setInterval(fetchData, 5000) // 每5秒刷新
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  chart?.dispose()
+})
+</script>
+
+<style scoped>
+.chart-container {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+</style> -->

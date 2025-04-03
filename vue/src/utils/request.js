@@ -36,17 +36,6 @@ request.interceptors.request.use(
         return Promise.reject(error)
     }
 )
-// request.interceptors.request.use(config => {
-//     config.headers['Content-Type'] = 'application/json;charset=utf-8';
-//     let user = JSON.parse(localStorage.getItem("honey-user") || '{}')
-//     config.headers['token'] = user.token  // 设置请求头
-
-//     return config
-// }, error => {
-//     console.error('request error: ' + error) // for debug
-//     return Promise.reject(error)
-// });
-
 
 request.interceptors.response.use(
   response => response.data,

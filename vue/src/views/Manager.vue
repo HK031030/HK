@@ -124,6 +124,11 @@
               <span>日志管理</span>
             </el-menu-item>
           </el-sub-menu>
+          <!-- 智能助手 -->
+          <el-menu-item v-if="hasPermission('ai-manage')" index="/manager/aiassistant">
+              <el-icon><ChatLineRound /></el-icon>
+              <span>智能助手</span>
+             </el-menu-item>
         </el-menu>
       </div>
 
@@ -177,6 +182,8 @@ const permissions = {
     'appointment-export',     // 导出预约数据
     'appointment-cancel',     // 取消任何预约
     'appointment-detail',     // 查看预约详情
+    'ai-manage',
+    'monitor'
   ],
   'COACH': [
     'system-home',
@@ -194,6 +201,7 @@ const permissions = {
     'appointment-coach',      // 查看自己的课程预约
     'appointment-audit',      // 审核预约
     'appointment-detail',     // 查看预约详情
+    'ai-manage'
   ],
   'USER': [
     'system-home',
@@ -204,7 +212,8 @@ const permissions = {
     'appointment-manage',      // 预约管理模块
     'appointment-user',       // 查看自己的预约
     'appointment-cancel',     // 取消自己的预约
-    'appointment-complete'    // 确认完成课程
+    'appointment-complete',    // 确认完成课程
+    'ai-manage'
     // 普通用户没有日志管理权限
   ]
 };

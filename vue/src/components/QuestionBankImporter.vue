@@ -96,7 +96,7 @@
   
   <script setup lang="ts">
   import { ref } from 'vue'
-  import { ElMessage } from 'element-plus'
+  import { ElMessage,ElMessageBox } from 'element-plus'
   
   // 类型定义
   interface QuestionOption {

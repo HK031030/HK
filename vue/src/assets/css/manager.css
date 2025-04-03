@@ -37,10 +37,17 @@
     flex: 1;
 }
 
+/* 为 Flex 容器添加样式 */
+.manager-container > div:nth-child(2) {
+    display: flex;
+    height: calc(100vh - 60px); /* 减去头部高度 */
+    overflow-y: auto; /* 允许滚动 */
+}
+
 .manager-main-left {
     width: 200px;
+    height: 100%; /* 改为 100%，随容器高度变化 */
     box-shadow: 0 0 6px rgba(0, 21, 41, .33);
-    min-height: calc(100vh - 60px);
     transition: all 0.3s ease-in-out;
 }
 
@@ -49,9 +56,9 @@
     width: 0;
     background-color: #f8f8ff;
     padding: 10px;
+    overflow-y: auto; /* 添加滚动支持 */
     transition: all 0.3s ease-in-out;
 }
-
 
 /* Element-Plus 样式覆盖 */
 .el-menu {

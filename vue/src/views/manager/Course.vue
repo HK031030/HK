@@ -74,7 +74,7 @@
             :icon="Delete"
             circle
             @click="handleDelete(row)"
-            v-if="role === 'ADMIN' || role === 'COACH'"
+            v-if="role === 'ADMIN' || (role === 'COACH' && row.coachId === userId)"
           />
 
             <!-- 修改预约/取消按钮 -->
@@ -205,14 +205,14 @@
   </div>
 </template>
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted,nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Calendar } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { getCourseList, searchCourses,addCourse, updateCourse, deleteCourse, getCourseSlots, createReservation } from '@/api/course'
 import { getUserReservations, cancelReservation } from '@/api/reservation' 
 import { useRoute } from 'vue-router'; // 确保导入 useRoute
-import { debounce } from 'lodash-es'  
+// import { debounce } from 'lodash-es'  
 
 const courses = ref([])
 const loading = ref(false)
@@ -223,6 +223,8 @@ const coachList = ref([])
 
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
 const role = ref(userInfo.value.role || '')
+const userId = ref(userInfo.value.id || userInfo.value.userId || '')
+
 
 const hasPermission = (permission) => {
   const permissions = {
@@ -285,7 +287,8 @@ const checkUserReservations = async () => {
         ...course,
         isReserved: reservationMap.has(course.id),
         reservationId: reservationMap.get(course.id)?.id,
-        status: reservationMap.get(course.id)?.status || 'NOT_RESERVED'
+        slotId: reservationMap.get(course.id)?.slotId,
+        status: reservationMap.get(course.id)?.status || 'AVAILABLE'
       }));
     } else if (res.status === 'CANCELLED') {
       // Handle the case when there's a status at the top level
@@ -330,7 +333,8 @@ const loadCourses = async () => {
         coachId: record.coachId, // 修改为 coachId
         coachName: record.coachName,
         remain: record.remain || 30,
-        status: record.status
+        status: 'AVAILABLE',
+        isReserved: false
         
       }))
       total.value = res.data.total || 0
@@ -471,6 +475,10 @@ const handleEdit = (row) => {
 }
 
 const handleDelete = async (row) => {
+  if (role.value === 'COACH' && row.coachId !== userId.value) {
+    ElMessage.warning('您只能删除自己创建的课程')
+    return
+  }
   if (role.value !== 'ADMIN' && role.value !== 'COACH') {
     ElMessage.warning('您无权删除课程')
     return
@@ -631,6 +639,7 @@ const handleReserveSubmit = async () => {
           reservationId: res.data?.id,
           remain: Math.max(0, currentCourse.value.remain - 1)
         };
+        await nextTick(); // 等待视图更新
       }
       // 关闭对话框
       reserveDialogVisible.value = false;
@@ -672,37 +681,29 @@ const confirmCancelReserve = async (row) => {
    
 const handleCancelReserve = async (row) => {
   try {
-    if (!row.reservationId || !currentCourse.value.id) {
-      ElMessage.error('找不到预约记录');
-      return;
+    if (!row.slotId) {
+      throw new Error('缺少时间段ID，无法取消');
     }
-
-    const res = await cancelReservation(
-      userInfo.value.id,
-      row.id
-    );
-
+    const res = await cancelReservation(userInfo.value.id, row.slotId);
     if (res.code === '200') {
       ElMessage.success('取消预约成功');
-      
-      // 更新课程状态
       const courseIndex = courses.value.findIndex(c => c.id === row.id);
       if (courseIndex !== -1) {
         courses.value[courseIndex] = {
           ...courses.value[courseIndex],
-          status: 'CANCELLED',
+          status: 'AVAILABLE',
           isReserved: false,
           remain: courses.value[courseIndex].remain + 1
         };
+        await nextTick();
       }
-      
       await checkUserReservations();
     } else {
       throw new Error(res.msg || '取消失败');
     }
   } catch (error) {
     console.error('取消预约失败:', error);
-    ElMessage.error('取消预约失败');
+    ElMessage.error(error.message || '取消预约失败');
   }
 };
 

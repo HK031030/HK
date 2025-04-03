@@ -59,49 +59,24 @@ const buttonText = computed(() => {
   }
 })
 
-// 修改导航方法
-// const handleClick = () => {
-//   // 只有在不拖拽时才能点击
-//   if (!isDragging.value) {
-//     try {
-//       const baseUrl = 'http://localhost:5173' // 根据实际部署地址修改
-//       if (props.role === 'ADMIN') {
-//         window.location.href = `${baseUrl}/market-analysis/ershouche/index.html`
-//       } else if (props.role === 'COACH') {
-//         window.location.href = `${baseUrl}/coach/resources`
-//       } else {
-//         window.location.href = `${baseUrl}/market-analysis/ershouche/price.html`
-//       }
-//     } catch (error) {
-//       console.error('导航失败:', error)
-//       ElMessage.error('页面跳转失败，请稍后重试')
-//     }
-//   }
-// }
-
 const handleClick = () => {
   if (!isDragging.value) {
     try {
       if (props.role === 'ADMIN') {
-        router.push('/monitor').catch(err => {
-          console.error('路由跳转失败:', err)
-          ElMessage.error('页面跳转失败，请检查路由配置')
-        })
+        router.push('/monitor');
       } else if (props.role === 'COACH') {
-        router.push('/manager/coach/resources')
+        router.push('/manager/coach/resources');
+      } else if (props.role === 'USER') {
+        router.push('/manager/materials');
       } else {
-        // 修改用户跳转路径
-        router.push('/manager/materials').catch(err => {
-          console.error('路由跳转失败:', err)
-          ElMessage.error('页面跳转失败，请检查路由配置')
-        })
+        router.push('/manager/materials');
       }
     } catch (error) {
-      console.error('导航失败:', error)
-      ElMessage.error('页面跳转失败，请稍后重试')
+      console.error('导航失败:', error);
+      ElMessage.error('页面跳转失败，请稍后重试');
     }
   }
-}
+};
 // 拖拽相关方法
 const handleDragStart = (e) => {
   e.preventDefault()

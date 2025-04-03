@@ -147,7 +147,7 @@ const handleAvatarSuccess = (response) => {
   console.log('上传成功:', response);
  
   if (response.code === '200') {
-    const fileUrl = response.data.replace('http://192.168.110.93:8080', import.meta.env.VITE_BASE_URL);
+    const fileUrl = response.data.replace('http://192.168.43.63:8080', import.meta.env.VITE_BASE_URL);
     user.value.avatar = fileUrl;    // 更新 avatar
     ElMessage.success('头像上传成功');
     localStorage.setItem('userInfo', JSON.stringify(user.value));

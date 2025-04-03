@@ -48,7 +48,7 @@ export function createReservation(data) {
 export function cancelReservation(userId, slotId) {
   return request({
     url: '/reservations/cancel',
-    method: 'get',
+    method: 'post',
     params: { 
       userId,
       slotId

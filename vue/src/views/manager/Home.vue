@@ -100,13 +100,17 @@
         <el-table-column 
           prop="startTime" 
           label="开始时间" 
-          width="160"
+          width="180"
           :formatter="formatDateTime"
+          align="center"
         />
+        <el-table-column label="" width="220" />
         <el-table-column 
           prop="title" 
           label="课程名称"
-          show-overflow-tooltip 
+          show-overflow-tooltip
+          align="left"
+          min-width="220" 
         />
         <el-table-column 
           label="学员人数" 
@@ -114,16 +118,6 @@
         >
           <template #default="{ row }">
             {{ row.currentCount }}/{{ row.maxCount }}
-          </template>
-        </el-table-column>
-        <el-table-column 
-          label="状态" 
-          width="100"
-        >
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusText(row.status) }}
-            </el-tag>
           </template>
         </el-table-column>
         <el-table-column 
@@ -139,8 +133,7 @@
         >
       查看
     </el-button>
-  </template>
-          
+  </template>        
         </el-table-column>
       </el-table>
     </el-card>
@@ -256,6 +249,7 @@
   </div>
 </el-card>
     </div>
+    <MessageBoard :user-info="userInfo" :role="role" />
     <FloatingCar :role="role" />
   </div>
 </template>
@@ -266,9 +260,12 @@ import { useRouter } from 'vue-router';
 
 import CountTo from 'vue3-count-to';
 import { getNoticeList } from '@/api/notice'
-import { getCourseList } from '@/api/course' 
+import { getCourseList ,getCourseSlots} from '@/api/course'
+import { createReservation } from '@/api/reservation' 
 import FloatingCar from '@/components/dashboard/FloatingCar.vue'
-import { ElMessage } from 'element-plus'
+import MessageBoard from '@/components/dashboard/MessageBoard.vue';
+import { ElMessage,ElMessageBox } from 'element-plus'
+import { Delete, Check } from '@element-plus/icons-vue';
 import dayjs from 'dayjs'
 import { 
   getUserReservations_List,  // 获取预约列表
@@ -279,7 +276,6 @@ import {
 const router = useRouter();
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'));
 const role = ref(userInfo.value.role || 'USER');
-// const loading = ref(false);
 
 const loading = ref({
   courses: false,
@@ -344,8 +340,8 @@ const loadNotices = async () => {
     loading.value = true;
     console.log('开始加载公告...');
     const res = await getNoticeList({
-      pageNum: params.value.pageNum,  // 使用 .value 访问 ref 值
-      pageSize: params.value.pageSize, // 使用 .value 访问 ref 值
+      pageNum: params.value.pageNum,
+      pageSize: params.value.pageSize,
       title: params.value.title 
     });
     console.log('公告接口响应:', res);
@@ -394,7 +390,6 @@ const getNoticeTypeText = (top) => {
 
 // 教练今日课程数据
 const todayCourses = ref([]);
-// 获取今日课程
 
 // 获取教练课程列表
 const loadRecentCourses = async () => {
@@ -423,7 +418,7 @@ const loadRecentCourses = async () => {
         title: course.title,
         startTime: course.startTime,
         endTime: course.endTime,
-        currentCount: course.currentCount || 0,
+        currentCount: course.currentCount || 5,
         maxCount: course.maxCount || 30,
         location: course.location || '未设置',
         status: course.status || 0,
@@ -445,46 +440,26 @@ const loadRecentCourses = async () => {
   }
 }
 
-// 格式化日期时间
+// 统一的日期时间格式化函数
 const formatDateTime = (time) => {
-  return time ? dayjs(time).format('YYYY-MM-DD HH:mm') : '-'
-}
-
-// 获取状态类型
-const getStatusType = (status) => {
-  const statusMap = {
-    0: 'info',    // 未开始
-    1: 'success', // 进行中
-    2: 'warning', // 已结束
-    3: 'danger'   // 已取消
+  if (!time) return '-'
+  try {
+    if(time.startTime !==null && time.startTime !== undefined){
+      return dayjs(time.startTime).format('YYYY-MM-DD HH:mm')
+    }
+    // 使用 dayjs 处理日期格式化
+    return dayjs(time).format('YYYY-MM-DD HH:mm')
+  } catch (error) {
+    console.error('日期格式化失败:', error, time)
+    return '-'
   }
-  return statusMap[status] || 'info'
 }
 
-// 获取状态文本
-const getStatusText = (status) => {
-  const statusMap = {
-    0: '未开始',
-    1: '进行中',
-    2: '已结束',
-    3: '已取消'
-  }
-  return statusMap[status] || '未知'
-}
-
-// 判断是否可以开始课程
-// const canStartCourse = (course) => {
-//   if (course.status !== 0) return false
-//   const now = dayjs()
-//   const courseTime = dayjs(course.startTime)
-//   return now.isAfter(courseTime.subtract(30, 'minute')) && 
-//          now.isBefore(courseTime.add(course.during, 'hour'))
-// }
 
 // 查看全部课程
-// const viewAllCourses = () => {
-//   router.push('/manager/course')
-// }
+const viewAllCourses = () => {
+  router.push('/manager/course')
+}
 
 const courseImages = [
   '/src/assets/imgs/course2.jpg',
@@ -548,7 +523,6 @@ const myAppointments = ref([]);
 const getAppointmentStatus = (status) => {
   const statusMap = {
     'RESERVED': '已预约',
-    'NOT_RESERVED': '未预约',
     'CANCELLED': '已取消'  // 保留取消状态以支持取消预约功能
   }
   return statusMap[status] || '未预约'
@@ -558,10 +532,9 @@ const getAppointmentStatus = (status) => {
 const getStatusTagType = (status) => {
   const typeMap = {
     'RESERVED': 'success',
-    'NOT_RESERVED': 'info',
     'CANCELLED': 'danger'
   }
-  return typeMap[status] || 'info'
+  return typeMap[status] || '未知状态'
 }
 
 // 修改预约记录的数据转换
@@ -594,7 +567,7 @@ const loadMyAppointments = async () => {
         name: item.name,
         startTime: item.startTime,
         endTime: item.endTime,
-        status: item.status || 'NOT_RESERVED'
+        status: item.status || 'CANCELLED'
       }))
     }
   } catch (error) {
@@ -607,71 +580,55 @@ const loadMyAppointments = async () => {
   }
 }
 // 查看预约详情
-const viewAppointmentDetail = (appointment) => {
-  if (!appointment.courseId) {
+const viewAppointmentDetail = (reservation) => {
+  if (!reservation.courseId) {
     ElMessage.warning('课程信息不存在')
     return
   }
   router.push({
     path: '/manager/course',
     query: { 
-      courseId: appointment.courseId
+      courseId: reservation.courseId
     }
   })
 }
 
-// 取消预约
-const cancelAppointment = async (appointment) => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要取消这个预约吗？',
-      '取消预约',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    const res = await cancelReservation(userInfo.value.id, appointment.id)
-    if (res.code === '200') {
-      ElMessage.success('预约已取消')
-      await loadMyAppointments()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('取消预约失败:', error)
-      ElMessage.error('取消预约失败')
-    }
-  }
-}
 // 添加预约操作方法
 const handleReservation = async (course) => {
   try {
     const payload = {
       courseId: course.id,
-      userId: userInfo.value.id
+      userId: userInfo.value.id,
     }
+
     
     const res = await createReservation(payload)
-    if (res.code === '200') {
+    if (res.code === '201') {
       ElMessage.success('预约成功')
-      // 更新课程状态
+      
+      // First update the local course object
       course.status = 'RESERVED'
       course.remain = Math.max(0, course.remain - 1)
-      await checkUserReservations()
+      
+      // Then reload all relevant data
+      await Promise.all([
+        loadRecommendedCourses(),
+        role.value === 'USER' ? loadMyAppointments() : Promise.resolve()
+      ])
     } else {
-      throw new Error(res.msg || '预约失败')
+      // Only throw an error if the API returns a non-success code
+      ElMessage.error(res.msg || '预约失败')
     }
   } catch (error) {
     console.error('预约失败:', error)
-    ElMessage.error('预约失败')
+    ElMessage.error('预约失败: ' + (error.message || '未知错误'))
   }
 }
 
-// 添加取消预约方法
+// Replace the handleCancelReservation function with this:
 const handleCancelReservation = async (course) => {
   try {
+    console.log("sssddsfsfsdfadf",course)
     await ElMessageBox.confirm(
       '确定要取消这个预约吗？',
       '取消预约',
@@ -681,27 +638,34 @@ const handleCancelReservation = async (course) => {
         type: 'warning'
       }
     )
-    
-    const res = await cancelReservation(userInfo.value.id, course.id)
+    const respDemo = await getCourseSlots(course.id)
+
+    const res = await cancelReservation(userInfo.value.id, respDemo.data[0].id)
     if (res.code === '200') {
       ElMessage.success('取消预约成功')
-      // 更新课程状态
-      course.status = 'NOT_RESERVED'
-      course.remain = course.remain + 1
-      await checkUserReservations()
+      
+      // First update the local course object
+      course.status = ''
+      // course.remain = course.remain + 1
+      
+      // Then reload all relevant data
+      await Promise.all([
+        loadRecommendedCourses(),
+        role.value === 'USER' ? loadMyAppointments() : Promise.resolve()
+      ])
     } else {
-      throw new Error(res.msg || '取消预约失败')
+      ElMessage.error(res.msg || '取消预约失败')
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('取消预约失败:', error)
-      ElMessage.error('取消预约失败')
+      ElMessage.error('取消预约失败: ' + (error.message || '未知错误'))
     }
   }
 }
 // 学员操作方法
 const viewAllAppointments = () => {
-  router.push('/appointment/Userappointment');
+  router.push('/manager/appointment/user');
 };
 
 // 管理员操作方法
@@ -711,33 +675,13 @@ const handleQuickAction = (route) => {
 
 
 onMounted(async () => {
-  try {
-    // 确保 loading 的所有属性都已初始化
-    loading.value = {
-      courses: false,
-      recommended: false,
-      notices: false,
-      appointments: false
-    }
-
-    const loadPromises = []
-    
-    // 根据角色加载不同数据
-    if (role.value === 'USER') {
-      loadPromises.push(loadRecommendedCourses())
-      loadPromises.push(loadMyAppointments())
-    } else if (role.value === 'COACH') {
-      loadPromises.push(loadRecentCourses())
-    }
-    
-    // 公告是所有角色都需要加载的
-    loadPromises.push(loadNotices())
-
-    await Promise.all(loadPromises)
-  } catch (error) {
-    console.error('初始化数据失败:', error)
-    ElMessage.error('加载数据失败')
-  }
+  // Load all data in parallel for better performance
+  await Promise.all([
+    loadNotices(),
+    role.value === 'COACH' ? loadRecentCourses() : Promise.resolve(),
+    loadRecommendedCourses(),
+    role.value === 'USER' ? loadMyAppointments() : Promise.resolve(),
+  ])
 })
 </script>
 

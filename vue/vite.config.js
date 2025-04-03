@@ -22,16 +22,16 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://192.168.110.93:8080',
+        target: 'http://192.168.43.63:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/file/download': {  // 添加文件下载的代理
-        target: 'http://192.168.110.93:8080',
+        target: 'http://192.168.43.63:8080',
         changeOrigin: true
       },
       '/course': {  // 直接代理 /course 路径
-        target: 'http://192.168.110.93:8080',
+        target: 'http://192.168.43.63:8080',
         changeOrigin: true
       }
     }
