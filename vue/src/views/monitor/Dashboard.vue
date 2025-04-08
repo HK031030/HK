@@ -68,7 +68,7 @@
         </div>
 
         <div class="panel-section hot-coaches-section">
-          <h2 class="panel-title">热门教练</h2>
+          <h2 class="panel-title">留言区</h2>
           <div class="panel-content">
             <HotCoachCloud />
           </div>

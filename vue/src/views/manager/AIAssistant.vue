@@ -15,21 +15,21 @@
         <div class="feature-cards">
           <div class="feature-card" @click="selectSuggestion('如何使用系统的主要功能？')">
             <div class="card-icon">
-              <svg-icon name="feature-icon" />
+              <el-icon><HomeFilled /></el-icon>
             </div>
             <h3>系统功能</h3>
             <p>了解系统的主要功能和使用方法</p>
           </div>
           <div class="feature-card" @click="selectSuggestion('给我一些驾考学习建议')">
             <div class="card-icon">
-              <svg-icon name="study-icon" />
+              <el-icon><Reading /></el-icon>
             </div>
             <h3>学习建议</h3>
             <p>获取个性化的学习计划和资源推荐</p>
           </div>
           <div class="feature-card" @click="selectSuggestion('解答一个常见问题')">
             <div class="card-icon">
-              <svg-icon name="question-icon" />
+              <el-icon><QuestionFilled /></el-icon>
             </div>
             <h3>日常问答</h3>
             <p>解答你驾考中遇到的各种问题</p>
@@ -440,6 +440,7 @@ onMounted(async () => {
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
+// 页面头部样式优化
 .page-header {
   text-align: center;
   padding: 30px 0;
@@ -462,31 +463,44 @@ onMounted(async () => {
   }
 }
 
+// 内容区域样式优化与变量提取
+$primary-color: #4f46e5;
+$secondary-color: #7c3aed;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$border-color: #e2e8f0;
+$background-light: #f8fafc;
+$background-lighter: #f1f5f9;
+$box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+$border-radius: 12px;
+$transition-default: all 0.3s ease;
+
 .page-content {
-  max-width: 900px;
+  max-width: 100%;
   margin: 0 auto;
 
   .welcome-section {
     background: #ffffff;
     padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
 
     h2 {
       font-size: 22px;
-      color: #1e293b;
+      color: $text-primary;
       margin-top: 0;
       font-weight: 600;
     }
 
     p {
-      color: #64748b;
+      color: $text-secondary;
       font-size: 16px;
       margin-bottom: 25px;
     }
   }
 }
 
+// 特性卡片网格布局优化
 .feature-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -495,12 +509,12 @@ onMounted(async () => {
 }
 
 .feature-card {
-  background: #f8fafc;
+  background: $background-light;
   border-radius: 10px;
   padding: 20px;
-  transition: all 0.3s ease;
+  transition: $transition-default;
   cursor: pointer;
-  border: 1px solid #e2e8f0;
+  border: 1px solid $border-color;
 
   &:hover {
     transform: translateY(-5px);
@@ -511,28 +525,29 @@ onMounted(async () => {
   .card-icon {
     width: 50px;
     height: 50px;
-    background: rgba(79, 70, 229, 0.1);
+    background: rgba($primary-color, 0.1);
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 15px;
-    color: #4f46e5;
+    color: $primary-color;
   }
 
   h3 {
     font-size: 18px;
-    color: #1e293b;
+    color: $text-primary;
     margin: 10px 0;
   }
 
   p {
-    color: #64748b;
+    color: $text-secondary;
     font-size: 14px;
     margin: 0;
   }
 }
 
+// AI助手容器相关样式优化
 .ai-assistant-container {
   position: fixed;
   bottom: 20px;
@@ -540,16 +555,21 @@ onMounted(async () => {
   z-index: 1000;
 }
 
-.ai-assistant-trigger {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  border-radius: 50%;
+// 混合创建
+@mixin flex-center {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.ai-assistant-trigger {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, $primary-color, $secondary-color);
+  border-radius: 50%;
+  @include flex-center;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 6px 20px rgba($primary-color, 0.4);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &:hover {
@@ -580,6 +600,7 @@ onMounted(async () => {
   box-shadow: 0 2px 5px rgba(239, 68, 68, 0.5);
 }
 
+// 模态框样式优化
 .ai-assistant-modal {
   position: fixed;
   bottom: 90px;
@@ -596,13 +617,14 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+// 头部样式优化
 .ai-header {
   padding: 15px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid $border-color;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8fafc;
+  background: $background-light;
 
   .header-title {
     display: flex;
@@ -612,13 +634,13 @@ onMounted(async () => {
     .ai-logo {
       width: 24px;
       height: 24px;
-      color: #4f46e5;
+      color: $primary-color;
     }
 
     h3 {
       margin: 0;
       font-size: 16px;
-      color: #1e293b;
+      color: $text-primary;
       font-weight: 600;
     }
   }
@@ -632,21 +654,22 @@ onMounted(async () => {
       border: none;
       cursor: pointer;
       padding: 8px;
-      color: #64748b;
+      color: $text-secondary;
       border-radius: 8px;
       transition: all 0.2s;
 
       &:hover {
-        background: #e2e8f0;
-        color: #1e293b;
+        background: $border-color;
+        color: $text-primary;
       }
     }
   }
 }
 
+// 设置面板样式优化
 .settings-panel {
   background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid $border-color;
   padding: 0;
   overflow: hidden;
 
@@ -655,12 +678,12 @@ onMounted(async () => {
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    background: #f1f5f9;
+    background: $background-lighter;
 
     h4 {
       margin: 0;
       font-size: 15px;
-      color: #1e293b;
+      color: $text-primary;
     }
 
     .close-settings {
@@ -668,10 +691,10 @@ onMounted(async () => {
       border: none;
       cursor: pointer;
       padding: 5px;
-      color: #64748b;
+      color: $text-secondary;
 
       &:hover {
-        color: #1e293b;
+        color: $text-primary;
       }
     }
   }
@@ -689,6 +712,7 @@ onMounted(async () => {
     font-size: 14px;
   }
 
+  // 开关样式组件化
   .switch {
     position: relative;
     display: inline-block;
@@ -701,7 +725,7 @@ onMounted(async () => {
       height: 0;
 
       &:checked + .slider {
-        background-color: #4f46e5;
+        background-color: $primary-color;
       }
 
       &:checked + .slider:before {
@@ -745,42 +769,41 @@ onMounted(async () => {
     border-radius: 6px;
     border: 1px solid #cbd5e1;
     color: #334155;
-    background-color: #f8fafc;
+    background-color: $background-light;
     outline: none;
     transition: all 0.2s;
 
     &:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
     }
   }
 }
 
+// 对话容器样式优化
 .ai-conversation-container {
   flex: 1;
   overflow-y: auto;
   padding: 15px;
-  background: #f8fafc;
+  background: $background-light;
   scroll-behavior: smooth;
 
   .welcome-message {
     display: flex;
     gap: 12px;
     align-items: flex-start;
-    background: #f1f5f9;
-    border-radius: 12px;
+    background: $background-lighter;
+    border-radius: $border-radius;
     padding: 15px;
     margin-bottom: 15px;
 
     .ai-avatar {
       width: 40px;
       height: 40px;
-      background: #4f46e5;
+      background: $primary-color;
       color: white;
       border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      @include flex-center;
       font-weight: bold;
       flex-shrink: 0;
     }
@@ -790,18 +813,19 @@ onMounted(async () => {
 
       h4 {
         margin: 0 0 5px 0;
-        color: #1e293b;
+        color: $text-primary;
         font-size: 16px;
       }
 
       p {
         margin: 0 0 10px 0;
-        color: #64748b;
+        color: $text-secondary;
         font-size: 14px;
       }
     }
   }
 
+  // 建议标签样式优化
   .suggestion-chips {
     display: flex;
     flex-wrap: wrap;
@@ -814,17 +838,18 @@ onMounted(async () => {
       border-radius: 16px;
       padding: 6px 12px;
       font-size: 13px;
-      color: #4f46e5;
+      color: $primary-color;
       cursor: pointer;
       transition: all 0.2s;
 
       &:hover {
-        background: rgba(79, 70, 229, 0.1);
-        border-color: #4f46e5;
+        background: rgba($primary-color, 0.1);
+        border-color: $primary-color;
       }
     }
   }
 
+  // 消息样式组件化
   .message {
     margin-bottom: 20px;
     display: flex;
@@ -834,9 +859,7 @@ onMounted(async () => {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      @include flex-center;
       font-weight: 500;
       font-size: 14px;
       flex-shrink: 0;
@@ -860,35 +883,38 @@ onMounted(async () => {
         text-align: right;
       }
     }
-    /* 添加到样式中 */
-.message-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 5px;
-  font-size: 12px;
-  color: #94a3b8;
-}
 
-.source-badge {
-  padding: 2px 6px;
-  background: rgba(79, 70, 229, 0.1);
-  color: #4f46e5;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 500;
-}
+    // 消息元数据样式优化
+    .message-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 5px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .source-badge {
+      padding: 2px 6px;
+      background: rgba($primary-color, 0.1);
+      color: $primary-color;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    // 用户消息样式
     &.user-message {
       flex-direction: row-reverse;
 
       .message-avatar {
-        background: #4f46e5;
+        background: $primary-color;
         color: white;
       }
 
       .message-content {
         .content-text {
-          background: #4f46e5;
+          background: $primary-color;
           color: white;
           border-radius: 12px 3px 12px 12px;
         }
@@ -899,10 +925,11 @@ onMounted(async () => {
       }
     }
 
+    // AI消息样式
     &.ai-message {
       .message-avatar {
-        background: #f1f5f9;
-        color: #4f46e5;
+        background: $background-lighter;
+        color: $primary-color;
       }
 
       .message-content {
@@ -916,6 +943,7 @@ onMounted(async () => {
     }
   }
 
+  // 打字指示器样式优化
   .ai-typing {
     display: flex;
     gap: 12px;
@@ -925,12 +953,10 @@ onMounted(async () => {
     .ai-avatar {
       width: 36px;
       height: 36px;
-      background: #f1f5f9;
-      color: #4f46e5;
+      background: $background-lighter;
+      color: $primary-color;
       border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      @include flex-center;
       font-weight: 500;
       font-size: 14px;
     }
@@ -947,7 +973,7 @@ onMounted(async () => {
       .typing-dot {
         width: 8px;
         height: 8px;
-        background: #4f46e5;
+        background: $primary-color;
         border-radius: 50%;
         opacity: 0.6;
         animation: typingBounce 1.4s infinite;
@@ -963,9 +989,10 @@ onMounted(async () => {
   }
 }
 
+// 输入容器样式优化
 .ai-input-container {
   padding: 10px 15px 15px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid $border-color;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -980,14 +1007,14 @@ onMounted(async () => {
       background: none;
       border: none;
       cursor: pointer;
-      color: #64748b;
+      color: $text-secondary;
       padding: 5px;
       border-radius: 5px;
       transition: all 0.2s;
 
       &:hover {
-        background: #f1f5f9;
-        color: #4f46e5;
+        background: $background-lighter;
+        color: $primary-color;
       }
     }
   }
@@ -1010,13 +1037,13 @@ onMounted(async () => {
       font-family: inherit;
 
       &:focus {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
       }
     }
 
     .send-button {
-      background: #4f46e5;
+      background: $primary-color;
       color: white;
       border: none;
       border-radius: 10px;
@@ -1048,6 +1075,7 @@ onMounted(async () => {
   }
 }
 
+// 过渡动画优化
 .slide-up-enter-active,
 .slide-up-leave-active {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1059,6 +1087,7 @@ onMounted(async () => {
   transform: translateY(30px);
 }
 
+// 关键帧动画优化
 @keyframes typingBounce {
   0%, 100% {
     transform: translateY(0);
@@ -1070,17 +1099,17 @@ onMounted(async () => {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+    box-shadow: 0 0 0 0 rgba($primary-color, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+    box-shadow: 0 0 0 10px rgba($primary-color, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    box-shadow: 0 0 0 0 rgba($primary-color, 0);
   }
 }
 
-/* 响应式调整 */
+// 媒体查询优化
 @media (max-width: 768px) {
   .page-content {
     padding: 0 10px;

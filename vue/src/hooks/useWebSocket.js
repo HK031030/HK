@@ -13,7 +13,6 @@ export function useWebSocket({ url, onMessage, onError, onClose }) {
         console.error('关闭先前连接时出错:', e);
       }
     }
-    
     // 根据文档构建正确的URL
     const baseUrl = url.value;
     const wsUrl = `${baseUrl}?authorization=${encodeURIComponent(authParams.authorization)}&date=${encodeURIComponent(authParams.date)}&host=${encodeURIComponent(authParams.host)}`;

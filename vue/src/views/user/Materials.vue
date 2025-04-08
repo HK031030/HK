@@ -11,7 +11,7 @@
           @click="selectSubject(subject)"
         >
           <el-icon :size="24">
-            <component :is="subject.icon" />
+            <component :is="icons[subject.icon]" />
           </el-icon>
           <h3>{{ subject.name }}</h3>
           <p>{{ subject.desc }}</p>
@@ -158,12 +158,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage,ElMessageBox } from 'element-plus'
-// import { 
-//   Guide, 
-//   Place, 
-//   Car, 
-//   TakeawayBox 
-// } from '@element-plus/icons-vue'
+import { 
+  Guide, 
+  Place, 
+  Car, 
+  TakeawayBox 
+} from '@element-plus/icons-vue'
 import { getQuestions, getAllQuestions ,getAnswers} from '@/api/question.js'
 
 // 类型定义
@@ -206,6 +206,7 @@ interface PracticeRecord {
   licenseType: string;     // 添加驾照类型
   questionCount: number;   // 添加题目数量
 }
+const icons = { Guide, Place, Car, TakeawayBox }
 
 // 科目数据
 const subjects: Subject[] = [
