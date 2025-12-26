@@ -27,7 +27,7 @@
 ## 📷 项目演示截图
 
 ### 登录页面
-![登录页面](src/assets/pictures/login.png)
+![登录页面](../src/assets/pictures/login.png)
 
 ### 学员预约页面
 ![预约页面](src/assets/pictures/yuyue.png)
