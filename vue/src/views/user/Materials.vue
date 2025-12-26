@@ -158,12 +158,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage,ElMessageBox } from 'element-plus'
-import { 
-  Guide, 
-  Place, 
-  Car, 
-  TakeawayBox 
-} from '@element-plus/icons-vue'
+import { Guide, Place,  TakeawayBox } from '@element-plus/icons-vue'
+
 import { getQuestions, getAllQuestions ,getAnswers} from '@/api/question.js'
 
 // 类型定义
@@ -206,7 +202,7 @@ interface PracticeRecord {
   licenseType: string;     // 添加驾照类型
   questionCount: number;   // 添加题目数量
 }
-const icons = { Guide, Place, Car, TakeawayBox }
+const icons = { Guide, Place,TakeawayBox }
 
 // 科目数据
 const subjects: Subject[] = [
