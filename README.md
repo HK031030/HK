@@ -29,8 +29,6 @@
 ### 登录页面
 ![登录页面](vue/src/assets/pictures/login.png)
 
-### 学员预约页面
-![预约页面](vue/src/assets/pictures/yuyue.png)
 
 ### 管理员监控大屏
 ![管理员大屏](vue/src/assets/pictures/图片1.png)
