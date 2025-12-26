@@ -24,6 +24,19 @@
 > * 完整前后端打包版本已用于课程设计提交与演示
 
 ---
+## 📷 项目演示截图
+
+### 登录页面
+![登录页面](src/assets/pictures/login.png)
+
+### 学员预约页面
+![预约页面](src/assets/pictures/yuyue.png)
+
+### 管理员监控大屏
+![管理员大屏](src/assets/pictures/图片1.png)
+
+### AI 智能助教
+![AI 助教](src/assets/pictures/图片2.png)
 
 ## 👥 用户角色与功能
 
